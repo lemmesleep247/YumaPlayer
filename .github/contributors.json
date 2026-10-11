@@ -1,5 +1,10 @@
 [
   {
+    "login": "snowind24",
+    "avatar_url": "https://avatars.githubusercontent.com/u/122722443?v=4",
+    "html_url": "https://github.com/snowind24"
+  },
+  {
     "login": "Diavyx",
     "avatar_url": "https://avatars.githubusercontent.com/u/65292523?v=4",
     "html_url": "https://github.com/Diavyx"
@@ -8,6 +13,21 @@
     "login": "aravindrejidev",
     "avatar_url": "https://avatars.githubusercontent.com/u/329062569?v=4",
     "html_url": "https://github.com/aravindrejidev"
+  },
+  {
+    "login": "AceHeike",
+    "avatar_url": "https://avatars.githubusercontent.com/u/36463213?v=4",
+    "html_url": "https://github.com/AceHeike"
+  },
+  {
+    "login": "Gama-Days",
+    "avatar_url": "https://avatars.githubusercontent.com/u/83136959?v=4",
+    "html_url": "https://github.com/Gama-Days"
+  },
+  {
+    "login": "3otxe",
+    "avatar_url": "https://avatars.githubusercontent.com/u/106014753?v=4",
+    "html_url": "https://github.com/3otxe"
   },
   {
     "login": "anuj990",
@@ -30,11 +50,6 @@
     "html_url": "https://github.com/ggottes"
   },
   {
-    "login": "Rafihidaya",
-    "avatar_url": "https://avatars.githubusercontent.com/u/122722443?v=4",
-    "html_url": "https://github.com/Rafihidaya"
-  },
-  {
     "login": "alaoguk160-commits",
     "avatar_url": "https://avatars.githubusercontent.com/u/314571281?v=4",
     "html_url": "https://github.com/alaoguk160-commits"
@@ -53,5 +68,10 @@
     "login": "yo5uke",
     "avatar_url": "https://avatars.githubusercontent.com/u/141737272?v=4",
     "html_url": "https://github.com/yo5uke"
+  },
+  {
+    "login": "corgi1978",
+    "avatar_url": "https://avatars.githubusercontent.com/u/169122554?v=4",
+    "html_url": "https://github.com/corgi1978"
   }
 ]
