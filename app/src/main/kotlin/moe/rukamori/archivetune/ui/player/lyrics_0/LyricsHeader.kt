@@ -1,24 +1,30 @@
 package moe.rukamori.archivetune.ui.player.lyrics_0
 
-import android.graphics.drawable.BitmapDrawable
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -27,12 +33,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import moe.rukamori.archivetune.R
 import moe.rukamori.archivetune.ui.component.MarqueeText
+import moe.rukamori.archivetune.ui.player.player_0.CapsuleDefaults
+import moe.rukamori.archivetune.ui.player.player_0.OverlayCapsuleShell
 import moe.rukamori.archivetune.ui.state.PlayerUiState
-
 import moe.rukamori.archivetune.ui.theme.SoftTextShadow
-import coil3.compose.AsyncImage
 
 @Composable
 fun LyricsHeader(
@@ -65,34 +72,19 @@ fun LyricsHeader(
         }
     }
 
-    val capsuleShape = RoundedCornerShape(24.dp)
-    val capsuleColor = if (state.isBlurBackgroundEnabled) Color.Black else Color(state.darkMutedColor)
-
-    val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val topPadding = if (statusBarTop > 0.dp) statusBarTop + 8.dp else 44.dp
-
-    Box(
-        modifier = modifier
-            .padding(top = topPadding, start = 24.dp, end = 24.dp)
-            .fillMaxWidth()
-            .height(64.dp)
-            .shadow(elevation = 12.dp, shape = capsuleShape, clip = false)
-            .graphicsLayer {
-                val progress = animateProgressProvider()
-                alpha = progress
-                scaleX = 0.8f + (0.2f * progress)
-                scaleY = 0.8f + (0.2f * progress)
-            }
-            .background(capsuleColor, capsuleShape)
+    OverlayCapsuleShell(
+        isBlurBackgroundEnabled = state.isBlurBackgroundEnabled,
+        darkMutedColor = state.darkMutedColor,
+        modifier = modifier,
+        progressProvider = animateProgressProvider,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(capsuleShape)
+                .clip(CapsuleDefaults.Shape)
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Кнопка сворачивания
             Box(
                 modifier = Modifier
                     .graphicsLayer { scaleX = closeScale; scaleY = closeScale }
@@ -104,7 +96,6 @@ fun LyricsHeader(
                 Image(painter = painterResource(id = R.drawable.ic_collapse), contentDescription = stringResource(R.string.collapse), modifier = Modifier.size(20.dp))
             }
 
-            // Центральная часть: Пластинка + Бегущий текст
             Row(
                 modifier = Modifier
                     .weight(1f)
@@ -132,14 +123,12 @@ fun LyricsHeader(
                     )
                 }
 
-                // ВНЕДРЕНИЕ ИМБЫ: Текст теперь полностью адаптивный
                 Column(
                     modifier = Modifier
                         .padding(start = 12.dp)
                         .weight(1f),
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // Название трека
                     MarqueeText(
                         text = state.title,
                         style = TextStyle(
@@ -168,7 +157,6 @@ fun LyricsHeader(
                 }
             }
 
-            // Кнопка меню
             Box(
                 modifier = Modifier
                     .graphicsLayer { scaleX = moreScale; scaleY = moreScale }
@@ -179,14 +167,6 @@ fun LyricsHeader(
             ) {
                 Image(painter = painterResource(id = R.drawable.ic_more), contentDescription = stringResource(R.string.more_label), modifier = Modifier.size(20.dp))
             }
-        }
-
-        if (state.isBlurBackgroundEnabled) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .border(BorderStroke(1.dp, Color(0x22FFFFFF)), capsuleShape)
-            )
         }
     }
 }

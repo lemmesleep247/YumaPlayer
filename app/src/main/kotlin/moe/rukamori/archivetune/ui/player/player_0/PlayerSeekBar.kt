@@ -27,6 +27,14 @@ import moe.rukamori.archivetune.ui.theme.LocalArchiveTuneFontFamily
 import moe.rukamori.archivetune.utils.TimeUtils
 import kotlinx.coroutines.flow.StateFlow
 
+internal object PlayerSeekBarDefaults {
+    val TouchTargetHeight = 24.dp
+    val ProgressToTimeGap = 0.dp
+    val CompactProgressToTimeGap = 0.dp
+    val TimeRowLift = 8.dp
+    val HorizontalPadding = 16.dp
+}
+
 // The marker has to sit exactly where the ear hears the effect begin, so it comes from the same
 // planner the service uses rather than the raw mixOutTime, which the service is free to reject.
 internal fun resolveTransitionMarkerMs(
@@ -59,6 +67,8 @@ fun PlayerSeekBar(
     onSeek: (Float) -> Unit,
     onSeekStarted: () -> Unit,
     isVisible: Boolean = true,
+    enabled: Boolean = true,
+    codecFractionProvider: () -> Float = { 0f },
     trackAnalysis: TrackAnalysisResult? = state.trackAnalysis,
 ) {
     var progressMs by remember { mutableLongStateOf(playbackProgress.value) }
@@ -141,7 +151,7 @@ fun PlayerSeekBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = PlayerSeekBarDefaults.HorizontalPadding)
     ) {
         val progressFractionProvider = {
             (animatedProgress / maxRange).coerceIn(0f, 1f)
@@ -170,6 +180,7 @@ fun PlayerSeekBar(
             markerMs = markerMs,
             durationMs = durationMs,
             maxRange = maxRange,
+            enabled = enabled,
             modifier = Modifier
                 .fillMaxWidth()
                 .graphicsLayer {
@@ -196,8 +207,13 @@ fun PlayerSeekBar(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 4.dp)
+                .padding(top = PlayerSeekBarDefaults.ProgressToTimeGap)
                 .graphicsLayer {
+                    val q = codecFractionProvider().coerceIn(0f, 1f)
+                    val p = (q / 0.45f).coerceIn(0f, 1f)
+                    val liftPx = PlayerSeekBarDefaults.TimeRowLift.toPx()
+                    translationY = -p * liftPx
+
                     val offset = slideOffset()
                     alpha = if (offset > 0.5f) ((offset - 0.5f) / 0.5f) else 0f
                 }
@@ -215,32 +231,38 @@ fun PlayerSeekBar(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                AnimatedVisibility(
-                    visible = showCodecInfo && codecInfo.isNotEmpty(),
-                    enter = fadeIn(tween(300)),
-                    exit = fadeOut(tween(300))
-                ) {
-                    Text(
-                        text = codecInfo,
-                        color = Color(0x80FFFFFF),
-                        fontFamily = LocalArchiveTuneFontFamily.current,
-                        fontSize = 10.sp,
-                        modifier = Modifier
-                            .background(Color(0x1AFFFFFF), CircleShape)
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                    )
-                }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AnimatedVisibility(
+                            visible = showCodecInfo && codecInfo.isNotEmpty(),
+                            enter = fadeIn(tween(300)),
+                            exit = fadeOut(tween(300))
+                        ) {
+                            Text(
+                                text = codecInfo,
+                                color = Color(0x80FFFFFF),
+                                fontFamily = LocalArchiveTuneFontFamily.current,
+                                fontSize = 10.sp,
+                                modifier = Modifier
+                                    .background(Color(0x1AFFFFFF), CircleShape)
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
 
-                AnimatedVisibility(
-                    visible = state.isImmersiveEnabled && sleepTimerRemainingSeconds != null,
-                    enter = fadeIn(tween(300)),
-                    exit = fadeOut(tween(300))
-                ) {
-                    SleepTimerTopBadge(
-                        state = state,
-                        onClick = onOpenSleepTimer
-                    )
-                }
+                        AnimatedVisibility(
+                            visible = state.isImmersiveEnabled && sleepTimerRemainingSeconds != null,
+                            enter = fadeIn(tween(300)),
+                            exit = fadeOut(tween(300))
+                        ) {
+                            SleepTimerTopBadge(
+                                state = state,
+                                onClick = onOpenSleepTimer,
+                                enabled = enabled
+                            )
+                        }
+                    }
             }
 
             Text(

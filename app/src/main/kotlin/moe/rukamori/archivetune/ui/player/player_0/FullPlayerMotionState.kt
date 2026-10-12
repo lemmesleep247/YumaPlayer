@@ -52,7 +52,7 @@ internal fun rememberFullPlayerMotionState(
 
     val isOverlayVisibleState = remember(state.isLyricsVisible) {
         derivedStateOf {
-            state.isLyricsVisible || lyricsFractionProvider() > 0.5f || queueFractionProvider() > 0.5f
+            state.isLyricsVisible || lyricsFractionProvider() > 0.5f
         }
     }
 
@@ -69,16 +69,14 @@ internal fun rememberFullPlayerMotionState(
         state.isPlaying,
         state.isImmersiveEnabled,
         state.isLyricsVisible,
-        state.isQueueVisible,
     ) {
         derivedStateOf {
             state.isPlaying &&
                 !state.isImmersiveEnabled &&
                 isSheetExpandedState.value &&
                 !state.isLyricsVisible &&
-                !state.isQueueVisible &&
                 lyricsFractionProvider() < 0.05f &&
-                queueFractionProvider() < 0.05f
+                queueFractionProvider() <= 0.80f
         }
     }
 

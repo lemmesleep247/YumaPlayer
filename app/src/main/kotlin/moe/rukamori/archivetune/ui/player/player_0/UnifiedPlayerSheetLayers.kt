@@ -53,23 +53,19 @@ internal fun UnifiedPlayerSheetLayers(
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
-                    val expansion = expansionFractionProvider()
-                    val isTranslucent = state.isBlurBackgroundEnabled || state.isImmersiveEnabled
-                    val overlayFraction = if (isTranslucent) 0f else maxOf(lyricsFractionProvider(), queueFractionProvider())
-                    alpha = (expansion * (1f - overlayFraction)).coerceIn(0f, 1f)
+                    alpha = expansionFractionProvider().coerceIn(0f, 1f)
                 }
         ) {
-                PlayerBackgroundLayers(
-                    state = state,
-                    canvasState = canvasState,
-                    expansionFractionProvider = expansionFractionProvider,
-                    lyricsFractionProvider = lyricsFractionProvider,
-                    queueFractionProvider = queueFractionProvider,
-                    onColorsExtracted = { vibrant, darkMuted, gradient ->
-                        onAction(PlayerAction.UpdateColors(vibrant, darkMuted, gradient))
-                    },
-                )
-
+            PlayerBackgroundLayers(
+                state = state,
+                canvasState = canvasState,
+                expansionFractionProvider = expansionFractionProvider,
+                lyricsFractionProvider = lyricsFractionProvider,
+                queueFractionProvider = queueFractionProvider,
+                onColorsExtracted = { vibrant, darkMuted, gradient ->
+                    onAction(PlayerAction.UpdateColors(vibrant, darkMuted, gradient))
+                },
+            )
         }
 
         val isMiniPlayerVisible by remember {
@@ -119,13 +115,17 @@ internal fun UnifiedPlayerSheetLayers(
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer {
-                            val maxFraction = maxOf(lyricsFractionProvider(), queueFractionProvider())
+                            val lyricsFraction = lyricsFractionProvider()
                             val expansionFraction = expansionFractionProvider()
-                            alpha = expansionFraction.coerceIn(0f, 1f) * (1f - maxFraction)
+
+                            alpha = expansionFraction.coerceIn(0f, 1f) *
+                                    (1f - lyricsFraction.coerceIn(0f, 1f))
+
                             translationY = if (expansionFraction <= 0.005f) {
                                 10000f
                             } else {
-                                (1f - expansionFraction) * (150f * density) - (200f * density * maxFraction)
+                                (1f - expansionFraction) * (150f * density) -
+                                        (200f * density * lyricsFraction)
                             }
                         }
                 ) {

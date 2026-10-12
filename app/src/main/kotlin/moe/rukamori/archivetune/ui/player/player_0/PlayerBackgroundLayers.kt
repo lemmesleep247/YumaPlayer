@@ -13,7 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -55,7 +57,7 @@ fun PlayerBackgroundLayers(
 
     val isOverlayVisible by remember {
         derivedStateOf {
-            state.isLyricsVisible || lyricsFractionProvider() > 0.5f || queueFractionProvider() > 0.5f
+            state.isLyricsVisible || lyricsFractionProvider() > 0.5f
         }
     }
     
@@ -150,7 +152,7 @@ fun PlayerBackgroundLayers(
                             state = playerHazeState,
                             style = HazeDefaults.style(
                                 backgroundColor = Color.Transparent,
-                                tint = HazeTint(Color.Transparent),
+                                tint = HazeTint(Color.Black.copy(alpha = 0.35f)),
                                 blurRadius = 56.dp,
                                 noiseFactor = SettingsDimensions.HazeNoiseFactor,
                             )
@@ -161,6 +163,8 @@ fun PlayerBackgroundLayers(
             }
         }
 
+        var isCanvasReady by remember(state.trackUrl) { mutableStateOf(false) }
+
         val isCanvasActive by remember {
             derivedStateOf {
                 canvasState.isCanvasEnabled &&
@@ -169,8 +173,14 @@ fun PlayerBackgroundLayers(
             }
         }
 
+        val queueArtworkFade by remember {
+            derivedStateOf {
+                (1f - (queueFractionProvider() - 0.45f) / (0.85f - 0.45f)).coerceIn(0f, 1f)
+            }
+        }
+
         val painter = painters.currentClearPainter
-        if (painter != null && !isCanvasActive) {
+        if (painter != null && !(isCanvasActive && isCanvasReady)) {
             Image(
                 painter = painter,
                 contentDescription = null,
@@ -178,7 +188,7 @@ fun PlayerBackgroundLayers(
                     .fillMaxWidth()
                     .aspectRatio(0.75f)
                     .align(Alignment.TopCenter)
-                    .artworkBottomFade(immersiveTransitionAlpha),
+                    .artworkBottomFade(immersiveTransitionAlpha * queueArtworkFade),
                 contentScale = ContentScale.Crop,
                 alignment = Alignment.TopCenter
             )
@@ -188,14 +198,15 @@ fun PlayerBackgroundLayers(
             PlayerCanvasArtworkHost(
                 state = state,
                 canvasState = canvasState,
-                immersiveTransitionAlpha = immersiveTransitionAlpha,
+                immersiveTransitionAlpha = immersiveTransitionAlpha * queueArtworkFade,
                 lyricsFractionProvider = lyricsFractionProvider,
                 queueFractionProvider = queueFractionProvider,
+                onReadyChange = { isCanvasReady = it },
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(0.75f)
                     .align(Alignment.TopCenter)
-                    .artworkBottomFade(immersiveTransitionAlpha)
+                    .artworkBottomFade(immersiveTransitionAlpha * queueArtworkFade)
             )
         }
     }

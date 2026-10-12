@@ -13,6 +13,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import moe.rukamori.archivetune.ui.haptics.LocalYumaHaptics
 import moe.rukamori.archivetune.ui.haptics.YumaHaptics
@@ -27,12 +28,16 @@ internal class NavigationBarGestureState(
     var isDragging by mutableStateOf(false)
         internal set
 
+    private var settlingJob: Job? = null
     val barScaleAnimatable get() = repulsionState.barScaleAnimatable
     val barTranslationXAnimatable get() = repulsionState.barTranslationXAnimatable
     val barTranslationYAnimatable get() = repulsionState.barTranslationYAnimatable
 
     fun onDragStart(offsetX: Float, offsetY: Float, maxRepulsionXPx: Float, maxRepulsionYPx: Float) {
         if (selectorState.items.isEmpty() || selectorState.tabWidthPx <= 0f) return
+        settlingJob?.cancel()
+        settlingJob = null
+
         isDragging = true
         selectorState.isDragging = true
 
@@ -77,12 +82,14 @@ internal class NavigationBarGestureState(
 
         selectorState.onRelease()
 
-        coroutineScope.launch {
+        settlingJob?.cancel()
+        settlingJob = coroutineScope.launch {
             val animSelector = launch { selectorState.animateRelease() }
             val animRepulsion = launch { repulsionState.animateRelease() }
 
             animSelector.join()
             animRepulsion.join()
+
             isDragging = false
             selectorState.isDragging = false
             selectorState.candidateIndex = -1
@@ -90,7 +97,27 @@ internal class NavigationBarGestureState(
     }
 
     fun onDragCancel() {
-        onDragEnd()
+        if (selectorState.items.isEmpty() || selectorState.tabWidthPx <= 0f) {
+            isDragging = false
+            selectorState.isDragging = false
+            selectorState.candidateIndex = -1
+            return
+        }
+
+        selectorState.onCancel()
+
+        settlingJob?.cancel()
+        settlingJob = coroutineScope.launch {
+            val animSelector = launch { selectorState.animateCancel() }
+            val animRepulsion = launch { repulsionState.animateRelease() }
+
+            animSelector.join()
+            animRepulsion.join()
+
+            isDragging = false
+            selectorState.isDragging = false
+            selectorState.candidateIndex = -1
+        }
     }
 }
 
@@ -102,18 +129,28 @@ internal fun rememberNavigationBarGestureState(
     coroutineScope: CoroutineScope = rememberCoroutineScope(),
     haptics: YumaHaptics = LocalYumaHaptics.current,
 ): NavigationBarGestureState {
-    val selectorState = remember(items, isSelected, onItemClick, haptics) {
-        NavigationTabSelectorState(
-            items = items,
-            isSelected = isSelected,
-            onItemClick = onItemClick,
-            haptics = haptics,
-        )
-    }
-    val repulsionState = remember {
-        NavigationBarRepulsionState()
-    }
-    return remember(selectorState, repulsionState, coroutineScope) {
+    val currentIsSelected by androidx.compose.runtime.rememberUpdatedState(isSelected)
+    val currentOnItemClick by androidx.compose.runtime.rememberUpdatedState(onItemClick)
+    val currentHaptics by androidx.compose.runtime.rememberUpdatedState(haptics)
+    val animationsDisabled = moe.rukamori.archivetune.LocalAnimationsDisabled.current
+    val currentAnimationsDisabled by androidx.compose.runtime.rememberUpdatedState(animationsDisabled)
+
+    val selectorState =
+        remember(items) {
+            NavigationTabSelectorState(
+                items = items,
+                isSelectedProvider = { currentIsSelected },
+                onItemClickProvider = { currentOnItemClick },
+                hapticsProvider = { currentHaptics },
+                animationsDisabledProvider = { currentAnimationsDisabled },
+                coroutineScope = coroutineScope,
+            )
+        }
+    val repulsionState =
+        remember {
+            NavigationBarRepulsionState()
+        }
+    return remember(selectorState, repulsionState) {
         NavigationBarGestureState(
             selectorState = selectorState,
             repulsionState = repulsionState,

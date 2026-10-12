@@ -24,12 +24,13 @@ internal fun PlayerCanvasArtworkHost(
     lyricsFractionProvider: () -> Float,
     queueFractionProvider: () -> Float,
     modifier: Modifier = Modifier,
+    onReadyChange: (Boolean) -> Unit = {},
 ) {
     val canPlayCanvas by remember(state.isPlaying, state.isImmersiveEnabled, immersiveTransitionAlpha) {
         derivedStateOf {
             state.isPlaying &&
                 lyricsFractionProvider() < 0.05f &&
-                queueFractionProvider() < 0.05f &&
+                queueFractionProvider() <= 0.80f &&
                     (state.isImmersiveEnabled && immersiveTransitionAlpha > 0.05f)
         }
     }
@@ -42,6 +43,7 @@ internal fun PlayerCanvasArtworkHost(
                 isPlaying = canPlayCanvas,
                 modifier = modifier,
                 resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM,
+                onReadyChange = onReadyChange,
             )
         }
     }
