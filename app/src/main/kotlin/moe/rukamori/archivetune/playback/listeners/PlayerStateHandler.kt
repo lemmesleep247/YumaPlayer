@@ -86,6 +86,20 @@ internal class PlayerStateHandler(
     fun onPlaybackStateChanged(
         @Player.State playbackState: Int,
     ) {
+        if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            val mediaId = runCatching { player.currentMediaItem?.mediaId }.getOrNull()
+            val attemptId = moe.rukamori.archivetune.playback.PlaybackTiming.getAttemptId(mediaId)
+            when (playbackState) {
+                Player.STATE_BUFFERING -> moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                    "PLAYER_BUFFERING", attemptId = attemptId,
+                    mediaId = mediaId,
+                )
+                Player.STATE_READY -> moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                    "PLAYER_READY", attemptId = attemptId,
+                    mediaId = mediaId,
+                )
+            }
+        }
         historyDelegate.updateHistoryTrackingPlaybackState()
         if (playbackState == STATE_ENDED || playbackState == STATE_IDLE) {
             historyDelegate.enqueueCurrentHistorySessionForFinalization()
@@ -157,6 +171,14 @@ internal class PlayerStateHandler(
     }
 
     fun onIsPlayingChanged(isPlaying: Boolean) {
+        if (moe.rukamori.archivetune.BuildConfig.DEBUG && isPlaying) {
+            val mediaId = runCatching { player.currentMediaItem?.mediaId }.getOrNull()
+            val attemptId = moe.rukamori.archivetune.playback.PlaybackTiming.getAttemptId(mediaId)
+            moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                "PLAYER_IS_PLAYING_TRUE", attemptId = attemptId,
+                mediaId = mediaId, extra = "client-flag no-audible-claim",
+            )
+        }
         crossfadeHooks.secondaryCrossfadePlayer?.let { secondaryPlayer ->
             if (crossfadeHooks.isCrossfading && !crossfadeHooks.crossfadeHandoffInProgress) {
                 if (isPlaying) {

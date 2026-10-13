@@ -42,6 +42,9 @@ internal fun MusicService.resolveYtPlaybackResponse(
                 throw youtubeFailure
             }
         }.getOrElse { throwable ->
+            if (throwable is kotlinx.coroutines.CancellationException) {
+                throw throwable
+            }
             when {
                 throwable is YTPlayerUtils.InvalidPlaybackLoginContextException -> {
                     promptLoginRecovery(mediaId, throwable.targetUrl)

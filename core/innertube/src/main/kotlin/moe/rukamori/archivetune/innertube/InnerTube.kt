@@ -249,6 +249,10 @@ class InnerTube {
         userAgent(client.userAgent)
     }
 
+    object TimingHook {
+        @Volatile var onRetry: ((attempt: Int, delayMs: Long) -> Unit)? = null
+    }
+
     private suspend fun <T> withRetry(
         maxAttempts: Int = 3,
         initialDelay: Long = 500L,
@@ -267,6 +271,7 @@ class InnerTube {
                 proxySelector?.markLastSelectedFailed()
                 proxySelector?.rotate()
                 if (attempt >= resolvedMaxAttempts) throw e
+                runCatching { TimingHook.onRetry?.invoke(attempt, currentDelay) }
                 delay(currentDelay)
                 currentDelay = (currentDelay * factor).toLong()
             }

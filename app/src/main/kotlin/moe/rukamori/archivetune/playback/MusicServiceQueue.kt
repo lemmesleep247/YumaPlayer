@@ -196,7 +196,15 @@ private fun MusicService.createPlaybackQueueManager(): PlaybackQueueManager {
 internal fun MusicService.playQueueInternal(
     queue: Queue,
     playWhenReady: Boolean = true,
-) = queueManager.playQueue(queue, playWhenReady)
+) {
+    if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+        PlaybackTiming.log(
+            "COMMAND_RECEIVED", attemptId = PlaybackTiming.lastClickAttemptId,
+            extra = "queue=${queue.javaClass.simpleName} playWhenReady=$playWhenReady",
+        )
+    }
+    queueManager.playQueue(queue, playWhenReady)
+}
 
 @OptIn(UnstableApi::class)
 internal fun MusicService.applyCurrentFirstShuffleOrder() =

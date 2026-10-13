@@ -63,7 +63,7 @@ All dimensions, paddings, and radii must be referenced directly from design toke
 * **`glassBackground`:** Static translucent matte fill for dark and light themes (no runtime blur shaders).
 * **`glassBorder`:** 0.5dp subtle translucent outline (`SettingsDimensions.GlassBorderThickness`) for crisp hairline edge definition.
 * **`primaryContainer` / `primary`:** Dynamic accent color for active toggle pills, badges, and switch thumbs.
-
+* **`Semantic Token Integrity`:** Design tokens must be selected by semantic purpose, not numerical equivalence. A token describing padding must not be reused for elevation, or a horizontal spacing token for an unrelated vertical gap, solely because their values match. Introduce a properly named token when no suitable semantic token exists. Avoid unnecessary global tokens for isolated component-specific values.
 ---
 
 ## 5. Settings & Preferences (Pattern: Glass Segmented Rows)
@@ -133,13 +133,41 @@ Interactive music provider toggle (YouTube Music / Spotify):
 
 ---
 
-### 5.3 Dropdowns & Selection Dialogs
+### 5.3 Conditional Settings (Progressive Disclosure)
+
+- Settings controlled by a parent toggle must use progressive disclosure.
+- When the parent toggle is disabled, dependent preference rows are hidden rather than displayed as disabled or greyed-out controls.
+- When enabled, dependent rows are revealed within the same segmented preference group.
+- Visibility changes use subtle expand/collapse animations and respect `LocalAnimationsDisabled`.
+- Hidden settings retain their persisted values. Disabling a feature must not reset its configuration.
+- Segmented corner positions (`Single`, `First`, `Middle`, `Last`) must update dynamically as rows appear or disappear.
+- Dependent settings must not create unnecessary nested cards or separate preference groups.
+- Use existing YDS preference components and animation tokens. Avoid feature-specific disclosure implementations.
+
+---
+
+### 5.4 Dropdowns & Selection Dialogs
 
 Dropdowns, context dialogs, and single-choice selectors follow **YDS 2.1 segmented glass patterns**:
 * Each selection option is an independent segmented glass card with position-aware lighting (`YumaSegmentPosition`).
 * Outer modal surface utilizes solid `surfaceContainerHigh` with 28dp corner radius and 0.5dp border (`SettingsDimensions.GlassBorderThickness`).
 * Total elimination of `HorizontalDivider` between options; separation is maintained by `SegmentGap = 1.5dp`.
 * Selected items feature a subtle `primary.copy(alpha = 0.16f)` container tint and a right-aligned checkmark icon.
+
+---
+
+### 5.5 Multi-Selection Bottom Sheets
+
+- Multi-selection sheets follow the same YDS segmented selection pattern as single-choice dialogs.
+- Each option is a full-width, independently clickable segmented row using `Modifier.yumaClickable()` and `Modifier.yumaGlassCard()`.
+- Selection is indicated through a subtle accent-tinted surface and a trailing checkmark icon.
+- Do not use default square Material 3 `Checkbox` controls for segmented selection lists.
+- Use position-aware corner radii, lighting and `SegmentGap` between options.
+- The modal container uses an opaque `surfaceContainerHigh` surface and existing YDS sheet tokens.
+- Selection changes should provide tactile feedback and subtle animated state transitions.
+- Touch targets must meet YDS minimum dimensions.
+- For confirmed multi-selection, changes remain temporary until the user selects Confirm. Cancel or dismiss discards pending changes.
+- Reuse a shared YDS selection component instead of recreating BottomSheet layouts for each feature.
 
 ---
 
@@ -151,6 +179,17 @@ Dropdowns, context dialogs, and single-choice selectors follow **YDS 2.1 segment
 | **Pressed** | Whole-card scale down to `0.96f` (`SettingsAnimations.PressScale`) with `spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMedium)` via `SettingsAnimations.pressSpring()`. When animations are disabled (`LocalAnimationsDisabled`), the press resolves via `snap()` with zero animation. |
 | **Active / Selected** | Active indicator filled with `primary`, text colored `onPrimary` or tinted container. |
 | **Disabled** | Row opacity set to `0.5f`, touch handling blocked. |
+
+---
+
+### 6.1 Conditional Visibility & Selection Feedback
+
+- Parent toggle changes must animate dependent content visibility without abrupt layout jumps.
+- Selection feedback must communicate state through tonal color, geometry and checkmark indicators rather than default Material controls.
+- Press feedback applies to the entire selectable row, not only its icon or label.
+- All state transitions must respect `LocalAnimationsDisabled`.
+- Hidden dependent controls are removed from focus and accessibility navigation.
+- Selection and disclosure animations must not delay preference persistence or playback operations.
 
 ---
 
@@ -185,6 +224,9 @@ Screens
 * Use the `SegmentGap` token (1.5dp) to separate grouped rows instead of `HorizontalDivider`.
 * Apply segmented corner radii (22dp outer, 5dp inner) to unify items within a group.
 * Use custom squircle/petal badge shapes for icons.
+* Use progressive disclosure for dependent settings.
+* Use segmented selectable rows with trailing checkmarks for multi-selection.
+* Reuse shared YDS sheet components and design tokens.
 
 ### ✘ DON'T
 * Wrap an entire preference group into a single opaque container without individual segmented rows.
@@ -192,3 +234,6 @@ Screens
 * Put `.yumaClickable(...)` after `.yumaGlassCard(...)` or inside inner layout containers, which causes disconnected content-only scaling.
 * Introduce arbitrary corner radii or paddings outside the defined YDS tokens.
 * Use generic circular solid chips from default Material 3.
+* Keep dependent settings visible as greyed-out rows when their parent feature is disabled.
+* Use raw Material 3 Checkbox widgets in YDS segmented selection sheets.
+* Duplicate custom BottomSheet implementations across individual features.

@@ -74,8 +74,28 @@ class ServiceSessionHolder {
     ): SessionToken {
         val token = SessionToken(service, ComponentName(service, serviceClass))
         sessionToken = token
+        val connectStartNanos = if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            val t = moe.rukamori.archivetune.playback.PlaybackTiming.nowNanos()
+            moe.rukamori.archivetune.playback.PlaybackTiming.log("CONTROLLER_CONNECT_START", startNanos = t)
+            t
+        } else 0L
         val controllerFuture = MediaController.Builder(service, token).buildAsync()
-        controllerFuture.addListener({ controllerFuture.get() }, MoreExecutors.directExecutor())
+        controllerFuture.addListener({
+            try {
+                controllerFuture.get()
+                if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                    moe.rukamori.archivetune.playback.PlaybackTiming.log("CONTROLLER_CONNECTED", startNanos = connectStartNanos)
+                }
+            } catch (t: Throwable) {
+                if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                    moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                        "CONTROLLER_CONNECT_FAILED",
+                        startNanos = connectStartNanos,
+                        extra = "error=${t.javaClass.simpleName}",
+                    )
+                }
+            }
+        }, MoreExecutors.directExecutor())
         return token
     }
 

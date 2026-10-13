@@ -22,6 +22,8 @@ class ChunkedDataSource(
     private var chunkOpen = false
     private var rangeBytes = chunkBytes
     private var passthrough = false
+    private var openStartNanos = 0L
+    private var firstReadLogged = false
 
     override fun addTransferListener(transferListener: TransferListener) {
         upstream.addTransferListener(transferListener)
@@ -32,6 +34,10 @@ class ChunkedDataSource(
         baseSpec = dataSpec
         position = dataSpec.position
         passthrough = false
+        openStartNanos = if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            PlaybackTiming.nowNanos()
+        } else 0L
+        firstReadLogged = false
 
         val host = dataSpec.uri.host
         val isGoogleVideo = host != null && (
@@ -60,6 +66,12 @@ class ChunkedDataSource(
         rangeBytes = chunkBytes
         if (bytesRemaining > 0L) {
             openChunk()
+        }
+        if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            PlaybackTiming.log(
+                "DATASOURCE_OPEN", startNanos = openStartNanos,
+                extra = "router=chunked passthrough=$passthrough host=${dataSpec.uri.host}",
+            )
         }
         return bytesRemaining
     }
@@ -91,6 +103,10 @@ class ChunkedDataSource(
                 position += read
                 chunkRemaining -= read
                 bytesRemaining -= read
+                if (moe.rukamori.archivetune.BuildConfig.DEBUG && !firstReadLogged && read > 0) {
+                    firstReadLogged = true
+                    PlaybackTiming.log("DATASOURCE_FIRST_READ", startNanos = openStartNanos, extra = "bytes=$read")
+                }
                 return read
             }
             chunkRemaining = 0L

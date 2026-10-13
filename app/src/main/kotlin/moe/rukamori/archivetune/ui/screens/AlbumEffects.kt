@@ -76,16 +76,38 @@ fun rememberAlbumActions(
         if (currentAlbumWithSongs != null) {
             AlbumActions(
                 onPlay = {
+                    val mediaId = currentAlbumWithSongs.songs.firstOrNull()?.id
+                    if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                        val attemptId = moe.rukamori.archivetune.playback.PlaybackTiming.markClick(mediaId)
+                        moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                            "TRACK_CLICKED", attemptId = attemptId, mediaId = mediaId, extra = "src=albumPlay",
+                        )
+                    }
                     playerConnection.playQueue(
                         LocalAlbumRadio(currentAlbumWithSongs),
                     )
                 },
                 onShuffle = {
+                    val shuffled = currentAlbumWithSongs.songs.shuffled()
+                    val mediaId = shuffled.firstOrNull()?.id
+                    if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                        val attemptId = moe.rukamori.archivetune.playback.PlaybackTiming.markClick(mediaId)
+                        moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                            "TRACK_CLICKED", attemptId = attemptId, mediaId = mediaId, extra = "src=albumShuffle",
+                        )
+                    }
                     playerConnection.playQueue(
-                        LocalAlbumRadio(currentAlbumWithSongs.copy(songs = currentAlbumWithSongs.songs.shuffled())),
+                        LocalAlbumRadio(currentAlbumWithSongs.copy(songs = shuffled)),
                     )
                 },
                 onSongClick = { index ->
+                    val mediaId = currentAlbumWithSongs.songs.getOrNull(index)?.id
+                    if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                        val attemptId = moe.rukamori.archivetune.playback.PlaybackTiming.markClick(mediaId)
+                        moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                            "TRACK_CLICKED", attemptId = attemptId, mediaId = mediaId, extra = "src=albumSong index=$index",
+                        )
+                    }
                     playerConnection.playQueue(
                         LocalAlbumRadio(currentAlbumWithSongs, startIndex = index),
                     )

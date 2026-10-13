@@ -833,3 +833,7 @@ enum class UpdateChannel {
     NIGHTLY,
     DAILY_NIGHTLY,
 }
+
+val SponsorBlockEnabledKey = booleanPreferencesKey("sponsorBlockEnabled")
+val SponsorBlockCategoriesKey = stringSetPreferencesKey("sponsorBlockCategories")
+val SponsorBlockApiUrlKey = stringPreferencesKey("sponsorBlockApiUrl")

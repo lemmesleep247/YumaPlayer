@@ -446,9 +446,9 @@ class MusicServiceLifecycle(
         delegate.dataStore.data
             .map { it[SkipSilenceKey] ?: false }
             .distinctUntilChanged()
-            .collectLatest(scope) {
-                delegate.localPlayer.skipSilenceEnabled = it
-                delegate.secondaryCrossfadePlayer?.skipSilenceEnabled = it
+            .collectLatest(scope) { requestedSkip ->
+                delegate.localPlayer.skipSilenceEnabled = requestedSkip
+                delegate.secondaryCrossfadePlayer?.skipSilenceEnabled = requestedSkip
             }
 
         delegate.dataStore.data
@@ -486,19 +486,13 @@ class MusicServiceLifecycle(
         combine(
             delegate.dataStore.data.map { it[AudioOffload] ?: false },
             delegate.dataStore.data.map { it[CrossfadeEnabledKey] ?: false },
-        ) { offloadEnabled, crossfadeEnabled ->
-            offloadEnabled to crossfadeEnabled
+            delegate.dataStore.data.map { it[SkipSilenceKey] ?: false },
+        ) { offloadEnabled, crossfadeEnabled, skipSilenceEnabled ->
+            Triple(offloadEnabled, crossfadeEnabled, skipSilenceEnabled)
         }.distinctUntilChanged()
-            .collectLatest(scope) { (offloadEnabled, crossfadeEnabled) ->
-                val effectiveOffload = offloadEnabled && !crossfadeEnabled
+            .collectLatest(scope) { (offloadEnabled, crossfadeEnabled, skipSilenceEnabled) ->
+                val effectiveOffload = offloadEnabled && !crossfadeEnabled && !skipSilenceEnabled
                 delegate.updateAudioOffload(effectiveOffload)
-                if (effectiveOffload) {
-                    val skipSilenceEnabled = delegate.dataStore.get(SkipSilenceKey, false)
-                    if (skipSilenceEnabled) {
-                        delegate.dataStore.edit { it[SkipSilenceKey] = false }
-                        delegate.localPlayer.skipSilenceEnabled = false
-                    }
-                }
             }
 
         combine(delegate.dataStore.data, delegate.togetherSessionState) { prefs, togetherState ->

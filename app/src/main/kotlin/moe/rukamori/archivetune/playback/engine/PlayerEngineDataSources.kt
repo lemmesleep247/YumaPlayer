@@ -27,6 +27,9 @@ open class SchemeRoutingDataSource(
     }
 
     override fun open(dataSpec: DataSpec): Long {
+        val openStartNanos = if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            moe.rukamori.archivetune.playback.PlaybackTiming.nowNanos()
+        } else 0L
         val normalizedScheme = dataSpec.uri.scheme?.lowercase(Locale.US)
         val selectedFactory =
             if (
@@ -41,7 +44,14 @@ open class SchemeRoutingDataSource(
         val selectedDataSource = selectedFactory.createDataSource()
         transferListeners.forEach(selectedDataSource::addTransferListener)
         delegate = selectedDataSource
-        return selectedDataSource.open(dataSpec)
+        val result = selectedDataSource.open(dataSpec)
+        if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                "DATASOURCE_OPEN", startNanos = openStartNanos,
+                extra = "router=scheme scheme=$normalizedScheme host=${dataSpec.uri.host}",
+            )
+        }
+        return result
     }
 
     override fun read(
@@ -74,8 +84,12 @@ open class ResolvedUrlRoutingDataSource(
     }
 
     override fun open(dataSpec: DataSpec): Long {
+        val openStartNanos = if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            moe.rukamori.archivetune.playback.PlaybackTiming.nowNanos()
+        } else 0L
+        val useExtractor = shouldUseExtractorFactory(dataSpec.uri)
         val selectedFactory =
-            if (shouldUseExtractorFactory(dataSpec.uri)) {
+            if (useExtractor) {
                 extractorFactory
             } else {
                 defaultFactory
@@ -83,7 +97,14 @@ open class ResolvedUrlRoutingDataSource(
         val selectedDataSource = selectedFactory.createDataSource()
         transferListeners.forEach(selectedDataSource::addTransferListener)
         delegate = selectedDataSource
-        return selectedDataSource.open(dataSpec)
+        val result = selectedDataSource.open(dataSpec)
+        if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                "DATASOURCE_OPEN", startNanos = openStartNanos,
+                extra = "router=resolvedUrl extractor=$useExtractor host=${dataSpec.uri.host}",
+            )
+        }
+        return result
     }
 
     override fun read(

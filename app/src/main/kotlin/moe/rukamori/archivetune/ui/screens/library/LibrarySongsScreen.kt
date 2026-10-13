@@ -96,6 +96,13 @@ fun LibrarySongsScreen(
         LibrarySongsActions(
             onPlayAll = {
                 if (displaySongs.isNotEmpty()) {
+                    val mediaId = displaySongs.firstOrNull()?.id
+                    if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                        val attemptId = moe.rukamori.archivetune.playback.PlaybackTiming.markClick(mediaId)
+                        moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                            "TRACK_CLICKED", attemptId = attemptId, mediaId = mediaId, extra = "src=libraryPlayAll count=${displaySongs.size}",
+                        )
+                    }
                     playerConnection.playQueue(
                         ListQueue(
                             title = context.getString(R.string.queue_all_songs),
@@ -110,6 +117,12 @@ fun LibrarySongsScreen(
                     if (songId == mediaMetadata?.id) {
                         playerConnection.player.togglePlayPause()
                     } else {
+                        if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                            val attemptId = moe.rukamori.archivetune.playback.PlaybackTiming.markClick(songId)
+                            moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                                "TRACK_CLICKED", attemptId = attemptId, mediaId = songId, extra = "src=librarySong index=$index",
+                            )
+                        }
                         playerConnection.playQueue(
                             ListQueue(
                                 title = context.getString(R.string.queue_all_songs),

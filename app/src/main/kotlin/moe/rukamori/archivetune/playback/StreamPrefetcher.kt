@@ -81,6 +81,11 @@ internal class StreamPrefetcher(
 
     fun cancelPrefetch() {
         prefetchTimelineGeneration.incrementAndGet()
+        activePrefetchMediaId?.let { id ->
+            if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                PlaybackTiming.markPrefetchEnd(id)
+            }
+        }
         activePrefetchMediaId = null
         activeCacheWriter?.cancel(); activeCacheWriter = null
         prefetchJob?.cancel(); prefetchJob = null
@@ -116,6 +121,9 @@ internal class StreamPrefetcher(
         cancelPrefetch()
         if (!resolvingPrefetchMediaIds.add(mediaId)) return
         activePrefetchMediaId = mediaId
+        if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            PlaybackTiming.markPrefetchStart(mediaId)
+        }
         val targetGeneration = prefetchTimelineGeneration.get()
         val cacheKey = "${mediaId}_${effectiveSource.name}"
         val streamClient = delegate.preferredStreamClient
@@ -252,6 +260,9 @@ internal class StreamPrefetcher(
                 throw e
             } catch (_: Throwable) {
             } finally {
+                if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                    PlaybackTiming.markPrefetchEnd(mediaId)
+                }
                 if (activePrefetchMediaId == mediaId) activePrefetchMediaId = null
                 resolvingPrefetchMediaIds.remove(mediaId)
             }

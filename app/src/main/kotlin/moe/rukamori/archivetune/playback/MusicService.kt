@@ -144,6 +144,9 @@ class MusicService :
     @Inject
     internal lateinit var loadWidgetInsightsUseCase: LoadWidgetInsightsUseCase
 
+    @Inject
+    lateinit var sponsorBlockPlaybackController: moe.rukamori.archivetune.sponsorblock.SponsorBlockPlaybackController
+
     internal var scopeJob = Job()
     internal var scope = CoroutineScope(Dispatchers.Main + scopeJob)
     internal var ioScope = CoroutineScope(Dispatchers.IO + scopeJob)
@@ -456,6 +459,11 @@ class MusicService :
 
     override fun onCreate() {
         super.onCreate()
+        val timingStartNanos = if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            val t = PlaybackTiming.nowNanos()
+            PlaybackTiming.log("SERVICE_CREATE_START", startNanos = PlaybackTiming.processStartNanos.takeIf { it > 0L } ?: t)
+            t
+        } else 0L
         ProxyAuth.init()
         ensureScopesActive()
 
@@ -492,6 +500,9 @@ class MusicService :
                     setOffloadEnabled(false)
                 }
         djFilterByPlayer[localPlayer] = localDjFilter
+        if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            PlaybackTiming.log("PLAYER_CREATED", startNanos = timingStartNanos)
+        }
         castPlaybackRepository = CastPlaybackRepositoryLocator.get(this)
         val basePlayer =
             castPlaybackRepository
@@ -522,6 +533,17 @@ class MusicService :
                 scope = scope,
                 loadWidgetInsights = loadWidgetInsightsUseCase,
             )
+
+        sponsorBlockPlaybackController.attach(
+            player = player,
+            scope = scope,
+            playbackSourceProvider = { mediaId ->
+                actualPlaybackSources.value[mediaId] ?: currentPlaybackSource
+            },
+            isTransitionActive = {
+                isCrossfading || crossfadeHandoffInProgress || (isControllerInitialized && controller.transitionDeck != null)
+            },
+        )
 
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -691,6 +713,7 @@ class MusicService :
         moe.rukamori.archivetune.playback.createTransientSongFromMedia(media)
 
     override fun onDestroy() {
+        sponsorBlockPlaybackController.detach()
         serviceLifecycle.onDestroy {
             super.onDestroy()
         }

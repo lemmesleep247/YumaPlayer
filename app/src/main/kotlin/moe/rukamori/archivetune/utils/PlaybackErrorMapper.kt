@@ -87,15 +87,55 @@ object PlaybackErrorMapper {
             "verify" in lower && "human" in lower
     }
 
+    fun isLoginRecoveryError(status: String?, reason: String?): Boolean {
+        val upperStatus = status?.uppercase(Locale.US).orEmpty()
+        val lowerReason = reason.orEmpty().lowercase(Locale.US)
+
+        if (upperStatus == "LOGIN_REQUIRED") {
+            return true
+        }
+
+        val hasSignInOrAgeText = "sign in" in lowerReason ||
+            "confirm your age" in lowerReason ||
+            "log in" in lowerReason ||
+            "login" in lowerReason ||
+            "age-restricted" in lowerReason ||
+            "age restricted" in lowerReason ||
+            "inappropriate for some users" in lowerReason ||
+            "mature audiences" in lowerReason ||
+            "adult" in lowerReason
+
+        if (upperStatus == "AGE_CHECK_REQUIRED" || upperStatus == "AGE_VERIFICATION_REQUIRED") {
+            if (hasSignInOrAgeText || lowerReason.isBlank()) {
+                return true
+            }
+        }
+
+        if (upperStatus == "CONTENT_CHECK_REQUIRED") {
+            return hasSignInOrAgeText
+        }
+
+        return isLoginRecoveryError(lowerReason)
+    }
+
     fun isLoginRecoveryError(reason: String): Boolean {
         val lower = reason.lowercase(Locale.US)
+        if ("login_required" in lower) return true
         return "confirm your age" in lower ||
             "age-restricted" in lower ||
             "age restricted" in lower ||
             "inappropriate for some users" in lower ||
             "mature audiences" in lower ||
             "adult" in lower && "sign in" in lower ||
-            "allow" in lower && "youtube music" in lower
+            "allow" in lower && "youtube music" in lower ||
+            ("sign in" in lower && (
+                "content_check_required" in lower ||
+                "age_check_required" in lower ||
+                "age_verification_required" in lower ||
+                "age" in lower
+            )) ||
+            "age_check_required" in lower ||
+            "age_verification_required" in lower
     }
 
     fun throwInvalidPlaybackLoginContextIfNeeded(

@@ -31,6 +31,9 @@ class MusicServiceBinding(
     private val serviceConnection =
         object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                    moe.rukamori.archivetune.playback.PlaybackTiming.log("BINDER_CONNECTED")
+                }
                 isMusicServiceBound = true
                 if (service is MusicBinder) {
                     val conn = PlayerConnection(activity, service, activity.database, activity.lifecycleScope)

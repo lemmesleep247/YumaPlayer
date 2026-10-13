@@ -780,4 +780,18 @@
     <string name="automix_duration_4s">4 с</string>
     <string name="automix_duration_8s">8 с</string>
     <string name="automix_duration_12s">12 с</string>
+    <string name="sponsor_block_group">SponsorBlock</string>
+    <string name="sponsor_block_use">Использовать SponsorBlock</string>
+    <string name="sponsor_block_categories">Категории</string>
+    <string name="sponsor_block_categories_desc">Выберите категории для пропуска</string>
+    <string name="sponsor_block_api_url">URL API SponsorBlock</string>
+    <string name="sponsor_block_music_off_topic">Немузыкальные фрагменты</string>
+    <string name="sponsor_block_sponsors">Спонсорские интеграции</string>
+    <string name="sponsor_block_intro">Вступление (Intro)</string>
+    <string name="sponsor_block_outro">Концовка (Outro)</string>
+    <string name="sponsor_block_self_promotions">Самореклама</string>
+    <string name="sponsor_block_previews">Анонсы и превью</string>
+    <string name="sponsor_block_fillers">Филлеры</string>
+    <string name="sponsor_block_subscription_reminders">Напоминания о подписке</string>
+    <string name="sponsor_block_hooks">Хуки и приветствия</string>
 </resources>

@@ -88,6 +88,12 @@ object SettingsDimensions {
     val BadgePaddingV = 4.dp
     val BadgeSpacing = 6.dp
     val BadgeSize = 8.dp
+    val PreferenceChipTopSpacing = 10.dp
+    val PreferenceChipHeight = 38.dp
+    val PreferenceChipCornerRadius = 20.dp
+    val PreferenceChipPaddingH = 14.dp
+    val PreferenceChipPaddingV = 8.dp
+    val PreferenceChipBgAlpha = 0.12f
 
     // -- Banners & profile header ------------------------------------------
     val BannerContentPadding = 16.dp
@@ -152,6 +158,10 @@ object SettingsDimensions {
     val BottomSheetOptionPaddingV = 14.dp
     val BottomSheetOptionIconSize = 20.dp
     val BottomSheetOptionIconSpacing = 12.dp
+    val BottomSheetTonalElevation = 6.dp
+    val BottomSheetShadowElevation = 10.dp
+    val BottomSheetActionRowSpacing = 16.dp
+    val BottomSheetActionButtonSpacing = 8.dp
     val YumaTitleFontSize = 12.sp
     val YumaTitlePaddingStart = 4.dp
     val YumaTitlePaddingBottom = 8.dp
@@ -189,11 +199,22 @@ object SettingsAnimations {
     val PressDampingRatio = 0.6f
     val PressStiffness = Spring.StiffnessMedium
 
+    val ResizeDampingRatio = 0.8f
+    val ResizeStiffness = Spring.StiffnessMedium
+
     @Composable
     fun <T> pressSpring(): FiniteAnimationSpec<T> =
         if (LocalAnimationsDisabled.current) {
             snap()
         } else {
             spring(dampingRatio = PressDampingRatio, stiffness = PressStiffness)
+        }
+
+    @Composable
+    fun <T> resizeSpring(): FiniteAnimationSpec<T> =
+        if (LocalAnimationsDisabled.current) {
+            snap()
+        } else {
+            spring(dampingRatio = ResizeDampingRatio, stiffness = ResizeStiffness)
         }
 }

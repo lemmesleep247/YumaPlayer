@@ -6,7 +6,7 @@
 
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 
-package moe.rukamori.archivetune.ui.screens.settings
+package moe.rukamori.archivetune.ui.screens.settings.player
 
 import android.content.Context
 import android.content.Intent
@@ -20,17 +20,25 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import moe.rukamori.archivetune.LocalPlayerAwareWindowInsets
@@ -62,14 +70,19 @@ import moe.rukamori.archivetune.constants.QobuzUserAuthTokenKey
 import moe.rukamori.archivetune.constants.SkipSilenceKey
 import moe.rukamori.archivetune.constants.StopMusicOnTaskClearKey
 import moe.rukamori.archivetune.constants.WakelockKey
+import moe.rukamori.archivetune.sponsorblock.normalizeSponsorBlockApiUrl
 import moe.rukamori.archivetune.ui.component.GlassDefaults
 import moe.rukamori.archivetune.ui.component.GlassScaffold
 import moe.rukamori.archivetune.ui.component.IconButton
+import moe.rukamori.archivetune.ui.component.TextFieldDialog
 import moe.rukamori.archivetune.ui.theme.TestThemeWrapper
 import moe.rukamori.archivetune.ui.theme.ThemePreviews
 import moe.rukamori.archivetune.ui.utils.backToMain
 import moe.rukamori.archivetune.utils.rememberEnumPreference
 import moe.rukamori.archivetune.utils.rememberPreference
+import moe.rukamori.archivetune.viewmodels.SponsorBlockCategoryUiModel
+import moe.rukamori.archivetune.viewmodels.SponsorBlockSettingsScreenState
+import moe.rukamori.archivetune.viewmodels.SponsorBlockSettingsViewModel
 
 @Composable
 fun PlayerSettings(navController: NavController) {
@@ -256,9 +269,91 @@ fun PlayerSettings(navController: NavController) {
         )
     }
 
+    val sponsorBlockViewModel: SponsorBlockSettingsViewModel = hiltViewModel()
+    val sponsorBlockState by sponsorBlockViewModel.uiState.collectAsStateWithLifecycle()
+
+    val onSponsorBlockEnabledChange = remember(sponsorBlockViewModel) {
+        sponsorBlockViewModel::onEnabledChange
+    }
+    val onSponsorBlockCategorySheetOpen = remember(sponsorBlockViewModel) {
+        sponsorBlockViewModel::onCategorySheetOpen
+    }
+    val onSponsorBlockCategorySheetDismiss = remember(sponsorBlockViewModel) {
+        sponsorBlockViewModel::onCategorySheetDismiss
+    }
+    val onSponsorBlockCategoryCheckedChange = remember(sponsorBlockViewModel) {
+        sponsorBlockViewModel::onCategoryOptionCheckedChange
+    }
+    val onSponsorBlockCategorySelectionConfirm = remember(sponsorBlockViewModel) {
+        sponsorBlockViewModel::onCategorySelectionConfirm
+    }
+    val onSponsorBlockApiUrlEditorOpen = remember(sponsorBlockViewModel) {
+        sponsorBlockViewModel::onApiUrlEditorOpen
+    }
+    val onSponsorBlockApiUrlEditorDismiss = remember(sponsorBlockViewModel) {
+        sponsorBlockViewModel::onApiUrlEditorDismiss
+    }
+    val onSponsorBlockApiUrlDraftChange = remember(sponsorBlockViewModel) {
+        sponsorBlockViewModel::onApiUrlDraftChange
+    }
+    val onSponsorBlockApiUrlConfirm = remember(sponsorBlockViewModel) {
+        sponsorBlockViewModel::onApiUrlConfirm
+    }
+    val onSponsorBlockRetry = remember(sponsorBlockViewModel) {
+        sponsorBlockViewModel::retry
+    }
+
+    SponsorBlockApiUrlDialog(
+        state = sponsorBlockState,
+        onValueChange = onSponsorBlockApiUrlDraftChange,
+        onConfirm = onSponsorBlockApiUrlConfirm,
+        onDismiss = onSponsorBlockApiUrlEditorDismiss,
+    )
+
     PlayerSettingsScreen(
         state = state,
         actions = actions,
+        sponsorBlockState = sponsorBlockState,
+        onSponsorBlockEnabledChange = onSponsorBlockEnabledChange,
+        onCategorySheetOpen = onSponsorBlockCategorySheetOpen,
+        onCategorySheetDismiss = onSponsorBlockCategorySheetDismiss,
+        onCategoryCheckedChange = onSponsorBlockCategoryCheckedChange,
+        onCategorySelectionConfirm = onSponsorBlockCategorySelectionConfirm,
+        onApiUrlEditorOpen = onSponsorBlockApiUrlEditorOpen,
+        onRetry = onSponsorBlockRetry,
+    )
+}
+
+@Composable
+private fun SponsorBlockApiUrlDialog(
+    state: SponsorBlockSettingsScreenState,
+    onValueChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val data = (state as? SponsorBlockSettingsScreenState.Success)?.data ?: return
+    if (!data.isApiUrlEditorVisible) return
+
+    val isInputValid = remember(data.isApiUrlDraftValid) {
+        { input: String -> normalizeSponsorBlockApiUrl(input) != null }
+    }
+
+    TextFieldDialog(
+        title = { Text(stringResource(R.string.sponsor_block_api_url)) },
+        initialTextFieldValue = TextFieldValue(
+            text = data.apiUrlDraft,
+            selection = TextRange(data.apiUrlDraft.length),
+        ),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Uri,
+            imeAction = ImeAction.Done,
+        ),
+        isInputValid = isInputValid,
+        onDone = { value ->
+            onValueChange(value)
+            onConfirm()
+        },
+        onDismiss = onDismiss,
     )
 }
 
@@ -266,6 +361,14 @@ fun PlayerSettings(navController: NavController) {
 internal fun PlayerSettingsScreen(
     state: PlayerSettingsUiState,
     actions: PlayerSettingsUiActions,
+    sponsorBlockState: SponsorBlockSettingsScreenState = SponsorBlockSettingsScreenState.Loading,
+    onSponsorBlockEnabledChange: (Boolean) -> Unit = {},
+    onCategorySheetOpen: () -> Unit = {},
+    onCategorySheetDismiss: () -> Unit = {},
+    onCategoryCheckedChange: (SponsorBlockCategoryUiModel, Boolean) -> Unit = { _, _ -> },
+    onCategorySelectionConfirm: () -> Unit = {},
+    onApiUrlEditorOpen: () -> Unit = {},
+    onRetry: () -> Unit = {},
 ) {
     GlassScaffold(
         topBar = {
@@ -291,6 +394,14 @@ internal fun PlayerSettingsScreen(
         PlayerSettingsContent(
             state = state,
             actions = actions,
+            sponsorBlockState = sponsorBlockState,
+            onSponsorBlockEnabledChange = onSponsorBlockEnabledChange,
+            onCategorySheetOpen = onCategorySheetOpen,
+            onCategorySheetDismiss = onCategorySheetDismiss,
+            onCategoryCheckedChange = onCategoryCheckedChange,
+            onCategorySelectionConfirm = onCategorySelectionConfirm,
+            onApiUrlEditorOpen = onApiUrlEditorOpen,
+            onRetry = onRetry,
             modifier = Modifier
                 .padding(top = topPadding)
                 .windowInsetsPadding(

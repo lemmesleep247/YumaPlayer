@@ -13,16 +13,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import moe.rukamori.archivetune.LocalDatabase
 import moe.rukamori.archivetune.LocalPlayerConnection
+import moe.rukamori.archivetune.MainActivity
 import moe.rukamori.archivetune.R
 import moe.rukamori.archivetune.extensions.metadata
 import moe.rukamori.archivetune.ui.menu.AddToPlaylistDialog
 import moe.rukamori.archivetune.ui.menu.EqualizerDialog
 import moe.rukamori.archivetune.ui.menu.TempoPitchDialog
+import moe.rukamori.archivetune.ui.player.PlaybackErrorDialog
+import moe.rukamori.archivetune.ui.player.PlaybackErrorKind
 import moe.rukamori.archivetune.ui.player.lyrics_0.LyricsOptionsMenu
 import moe.rukamori.archivetune.ui.player.player_0.buttons.PlayerAction
 import moe.rukamori.archivetune.ui.player.player_0.sett.FullPlayerOptionsMenu
 import moe.rukamori.archivetune.ui.player.player_0.sett.PlayerMenuScreen
 import moe.rukamori.archivetune.ui.player.queue_0.QueueOptionsMenu
+import moe.rukamori.archivetune.ui.player.toPlaybackErrorInfo
+import moe.rukamori.archivetune.ui.screens.buildLoginRoute
 import moe.rukamori.archivetune.ui.state.PlayerUiState
 import moe.rukamori.archivetune.ui.state.QueueUiState
 import moe.rukamori.archivetune.ui.state.UpdateState
@@ -51,6 +56,40 @@ internal fun PlayerSheetDialogs(
     var showPitchTempoDialog by remember { mutableStateOf(false) }
     var showAddToPlaylistDialog by remember { mutableStateOf(false) }
     var showQueueAddToPlaylistDialog by remember { mutableStateOf(false) }
+
+    val playbackError = state.playbackError
+    if (playbackError != null) {
+        val errorInfo = remember(playbackError) { playbackError.toPlaybackErrorInfo() }
+        if (moe.rukamori.archivetune.BuildConfig.DEBUG &&
+            (errorInfo.kind == PlaybackErrorKind.ConfirmationRequired || errorInfo.kind == PlaybackErrorKind.LoginRefreshRequired)
+        ) {
+            moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                "LOGIN_REQUIRED_DIALOG_COMPOSED",
+                mediaId = state.trackUrl,
+                extra = "kind=${errorInfo.kind}",
+            )
+        }
+        PlaybackErrorDialog(
+            error = playbackError,
+            onDismiss = {
+                playerConnection?.dismissPlaybackError()
+            },
+            onRetry = {
+                playerConnection?.dismissPlaybackError()
+                playerConnection?.player?.prepare()
+                playerConnection?.player?.play()
+            },
+            onLogin = {
+                playerConnection?.dismissPlaybackError()
+                val intent = Intent(context, MainActivity::class.java).apply {
+                    action = Intent.ACTION_VIEW
+                    putExtra("navigate_to", buildLoginRoute(errorInfo.loginRecoveryUrl))
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                }
+                runCatching { context.startActivity(intent) }
+            },
+        )
+    }
 
     LyricsOptionsMenu(
         isVisible = isLyricsMenuVisible,

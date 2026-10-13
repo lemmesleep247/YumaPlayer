@@ -590,7 +590,7 @@ private fun <T> PreferenceSelectionBottomSheet(
 }
 
 @Composable
-private fun PreferenceSelectionOption(
+fun PreferenceSelectionOption(
     text: String,
     description: String? = null,
     selected: Boolean,

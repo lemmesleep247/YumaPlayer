@@ -114,6 +114,21 @@ internal class QueuePlayOrchestrator(
 
     fun playQueue(queue: Queue, playWhenReady: Boolean = true) {
         if (delegate.gatePlayQueue(queue, playWhenReady)) return
+        val orchestratorStartNanos = if (moe.rukamori.archivetune.BuildConfig.DEBUG) PlaybackTiming.nowNanos() else 0L
+        val targetMediaId = queue.preloadItem?.id
+            ?: (queue as? moe.rukamori.archivetune.playback.queues.LocalAlbumRadio)?.let { it.albumWithSongs.songs.getOrNull(it.startIndex)?.id }
+            ?: (queue as? moe.rukamori.archivetune.playback.queues.YouTubeQueue)?.endpoint?.videoId
+            ?: PlaybackTiming.lastClickMediaId
+        val attemptId = if (moe.rukamori.archivetune.BuildConfig.DEBUG) PlaybackTiming.getAttemptId(targetMediaId) else 0L
+        val clickTimestamp = if (moe.rukamori.archivetune.BuildConfig.DEBUG) PlaybackTiming.lastClickNanos else 0L
+        if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            PlaybackTiming.log(
+                "ORCHESTRATOR_STARTED", attemptId = attemptId,
+                mediaId = targetMediaId,
+                startNanos = clickTimestamp.takeIf { it > 0L } ?: orchestratorStartNanos,
+                extra = "queue=${queue.javaClass.simpleName}",
+            )
+        }
         val generation = ++playGeneration
         if (playWhenReady) {
             delegate.cancelIdleStop()
@@ -138,8 +153,19 @@ internal class QueuePlayOrchestrator(
 
         delegate.clearAutomix()
         if (queue.preloadItem != null) {
+            if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                PlaybackTiming.log(
+                    "MEDIA_ITEMS_SET", attemptId = attemptId,
+                    mediaId = runCatching { queue.preloadItem!!.toMediaItem().mediaId }.getOrNull(),
+                    extra = "preload fast-path",
+                )
+                PlaybackTiming.log("PREPARE_CALLED", attemptId = attemptId, extra = "preload")
+            }
             delegate.setMediaItem(queue.preloadItem!!.toMediaItem())
             delegate.prepare()
+            if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                PlaybackTiming.log("PLAY_REQUESTED", attemptId = attemptId, extra = "playWhenReady=$playWhenReady preload")
+            }
             delegate.setPlayWhenReady(playWhenReady)
         }
         playQueueJob = scope.launch(SilentHandler) {
@@ -147,8 +173,18 @@ internal class QueuePlayOrchestrator(
             try {
                 val hideExplicit = dataStore.get(HideExplicitKey, false)
                 val hideVideo = dataStore.get(HideVideoKey, false)
+                val ioStartNanos = if (moe.rukamori.archivetune.BuildConfig.DEBUG) PlaybackTiming.nowNanos() else 0L
+                if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                    PlaybackTiming.log("QUEUE_IO_START", attemptId = attemptId)
+                }
                 val initialStatus = withContext(ioDispatcher) {
                     queue.getInitialStatus().filterExplicit(hideExplicit).filterVideo(hideVideo)
+                }
+                if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                    PlaybackTiming.log(
+                        "QUEUE_IO_END", attemptId = attemptId,
+                        startNanos = ioStartNanos, extra = "items=${initialStatus.items.size} index=${initialStatus.mediaItemIndex}",
+                    )
                 }
                 if (!isActive || generation != playGeneration || getActiveQueue() !== queue) return@launch
                 if (initialStatus.title != null) {
@@ -204,8 +240,19 @@ internal class QueuePlayOrchestrator(
                         val items = initialStatus.items
                         val index = initialStatus.mediaItemIndex
 
+                        if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                            PlaybackTiming.log(
+                                "MEDIA_ITEMS_SET", attemptId = attemptId,
+                                mediaId = items.getOrNull(index)?.mediaId,
+                                extra = "count=${items.size} index=$index",
+                            )
+                            PlaybackTiming.log("PREPARE_CALLED", attemptId = attemptId)
+                        }
                         delegate.setMediaItems(items, index, initialStatus.position)
                         delegate.prepare()
+                        if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                            PlaybackTiming.log("PLAY_REQUESTED", attemptId = attemptId, extra = "playWhenReady=$playWhenReady")
+                        }
                         delegate.setPlayWhenReady(playWhenReady)
                         if (delegate.isShuffleModeEnabled()) {
                             applyCurrentFirstShuffleOrder()
@@ -215,8 +262,19 @@ internal class QueuePlayOrchestrator(
                     val items = initialStatus.items
                     val index = initialStatus.mediaItemIndex
 
+                    if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                        PlaybackTiming.log(
+                            "MEDIA_ITEMS_SET", attemptId = attemptId,
+                            mediaId = items.getOrNull(index)?.mediaId,
+                            extra = "count=${items.size} index=$index",
+                        )
+                        PlaybackTiming.log("PREPARE_CALLED", attemptId = attemptId)
+                    }
                     delegate.setMediaItems(items, index, initialStatus.position)
                     delegate.prepare()
+                    if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                        PlaybackTiming.log("PLAY_REQUESTED", attemptId = attemptId, extra = "playWhenReady=$playWhenReady")
+                    }
                     delegate.setPlayWhenReady(playWhenReady)
                     if (delegate.isShuffleModeEnabled()) {
                         applyCurrentFirstShuffleOrder()

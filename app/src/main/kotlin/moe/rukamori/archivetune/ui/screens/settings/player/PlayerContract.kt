@@ -4,7 +4,7 @@
  * GPL-3.0 License | Contributors: see git history
  */
 
-package moe.rukamori.archivetune.ui.screens.settings
+package moe.rukamori.archivetune.ui.screens.settings.player
 
 import androidx.compose.runtime.Immutable
 import moe.rukamori.archivetune.constants.AudioNormalizationKey

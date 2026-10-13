@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.firstOrNull
+import moe.rukamori.archivetune.utils.YTPlayerUtils
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.stateIn
@@ -139,6 +140,20 @@ class PlayerConnection(
     fun playQueue(queue: Queue) {
         synchronized(this) {
             playRequestGeneration++
+            if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                val mediaId = queue.preloadItem?.id
+                    ?: (queue as? moe.rukamori.archivetune.playback.queues.LocalAlbumRadio)?.let { it.albumWithSongs.songs.getOrNull(it.startIndex)?.id }
+                    ?: (queue as? moe.rukamori.archivetune.playback.queues.YouTubeQueue)?.endpoint?.videoId
+                    ?: PlaybackTiming.lastClickMediaId
+                val id = if (mediaId != null && mediaId == PlaybackTiming.lastClickMediaId && PlaybackTiming.lastClickAttemptId > 0L) {
+                    PlaybackTiming.lastClickAttemptId
+                } else if (mediaId != null) {
+                    PlaybackTiming.getAttemptId(mediaId)
+                } else {
+                    PlaybackTiming.markClick(null)
+                }
+                PlaybackTiming.log("COMMAND_DISPATCHED", attemptId = id, mediaId = mediaId, extra = "queue=${queue.javaClass.simpleName}")
+            }
             service.playQueue(queue)
         }
     }
@@ -147,6 +162,20 @@ class PlayerConnection(
         synchronized(this) {
             if (generation != playRequestGeneration) return false
             playRequestGeneration++
+            if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                val mediaId = queue.preloadItem?.id
+                    ?: (queue as? moe.rukamori.archivetune.playback.queues.LocalAlbumRadio)?.let { it.albumWithSongs.songs.getOrNull(it.startIndex)?.id }
+                    ?: (queue as? moe.rukamori.archivetune.playback.queues.YouTubeQueue)?.endpoint?.videoId
+                    ?: PlaybackTiming.lastClickMediaId
+                val id = if (mediaId != null && mediaId == PlaybackTiming.lastClickMediaId && PlaybackTiming.lastClickAttemptId > 0L) {
+                    PlaybackTiming.lastClickAttemptId
+                } else if (mediaId != null) {
+                    PlaybackTiming.getAttemptId(mediaId)
+                } else {
+                    PlaybackTiming.markClick(null)
+                }
+                PlaybackTiming.log("COMMAND_DISPATCHED", attemptId = id, mediaId = mediaId, extra = "queue=${queue.javaClass.simpleName} gated")
+            }
             service.playQueue(queue)
             return true
         }
@@ -262,8 +291,30 @@ class PlayerConnection(
     override fun onPlayerErrorChanged(playbackError: PlaybackException?) {
         if (playbackError != null) {
             reportException(playbackError)
+            if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                var isLogin = false
+                var t: Throwable? = playbackError
+                while (t != null) {
+                    if (t is YTPlayerUtils.LoginRequiredForPlaybackException) {
+                        isLogin = true
+                        break
+                    }
+                    t = t.cause
+                }
+                if (isLogin) {
+                    PlaybackTiming.log(
+                        "LOGIN_REQUIRED_MEDIA3_HANDLER",
+                        mediaId = player.currentMediaItem?.mediaId,
+                        extra = "code=${playbackError.errorCode}",
+                    )
+                }
+            }
         }
         error.value = playbackError
+    }
+
+    fun dismissPlaybackError() {
+        error.value = null
     }
 
     override fun onTracksChanged(tracks: Tracks) {

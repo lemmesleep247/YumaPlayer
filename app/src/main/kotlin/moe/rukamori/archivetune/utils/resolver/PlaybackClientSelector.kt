@@ -151,7 +151,7 @@ object PlaybackClientSelector {
                 STREAM_FALLBACK_CLIENTS.toList()
             }
 
-        return buildList {
+        val order = buildList {
             if (!authState.hasPlaybackLoginContext) {
                 add(VISIONOS)
             }
@@ -165,7 +165,15 @@ object PlaybackClientSelector {
             if (preferredStreamClient == PlayerStreamClient.WEB_REMIX) {
                 addAll(STREAM_FALLBACK_CLIENTS)
             }
-        }.distinct()
+        }.distinct().also { built ->
+            if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                    "STREAM_CLIENT_ORDER_BUILT",
+                    extra = "count=${built.size} login=${authState.hasPlaybackLoginContext}",
+                )
+            }
+        }
+        return order
     }
 
     internal fun describeClient(client: YouTubeClient): String = "${client.clientName}@${client.clientVersion}"

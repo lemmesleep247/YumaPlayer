@@ -1218,4 +1218,18 @@
     <string name="automix_duration_4s">4s</string>
     <string name="automix_duration_8s">8s</string>
     <string name="automix_duration_12s">12s</string>
+    <string name="sponsor_block_group">SponsorBlock</string>
+    <string name="sponsor_block_use">Use SponsorBlock</string>
+    <string name="sponsor_block_categories">Categories</string>
+    <string name="sponsor_block_categories_desc">Select SponsorBlock filtering</string>
+    <string name="sponsor_block_api_url">SponsorBlock API URL</string>
+    <string name="sponsor_block_music_off_topic">Non-music and off-topic portions</string>
+    <string name="sponsor_block_sponsors">Sponsors</string>
+    <string name="sponsor_block_intro">Intro</string>
+    <string name="sponsor_block_outro">Outro</string>
+    <string name="sponsor_block_self_promotions">Self promos</string>
+    <string name="sponsor_block_previews">Previews</string>
+    <string name="sponsor_block_fillers">Fillers</string>
+    <string name="sponsor_block_subscription_reminders">Subscription reminders</string>
+    <string name="sponsor_block_hooks">Hook/Greetings</string>
 </resources>

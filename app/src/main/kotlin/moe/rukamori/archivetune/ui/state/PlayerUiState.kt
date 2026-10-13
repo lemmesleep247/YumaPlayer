@@ -70,5 +70,6 @@ data class PlayerUiState(
     val coverDrawable: android.graphics.drawable.Drawable? = null,
     val isSheetCollapseRequested: Boolean = false,
     val trackAnalysis: TrackAnalysisResult? = null,
+    val playbackError: androidx.media3.common.PlaybackException? = null,
 )
 

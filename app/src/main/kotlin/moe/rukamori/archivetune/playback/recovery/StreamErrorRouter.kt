@@ -78,6 +78,13 @@ class StreamErrorRouter(
         }
 
         if (classifiers.hasLoginRequiredException(error)) {
+            if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                    "LOGIN_REQUIRED_MEDIA3_HANDLER",
+                    mediaId = currentMediaId,
+                    extra = "code=${error.errorCode}",
+                )
+            }
             return RecoveryDecision.ShowToast(R.string.playback_requires_youtube_music_confirmation)
         }
 

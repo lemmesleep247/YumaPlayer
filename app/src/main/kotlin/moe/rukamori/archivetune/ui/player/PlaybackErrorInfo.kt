@@ -36,20 +36,23 @@ internal data class PlaybackErrorInfo(
 
 internal fun PlaybackException.toPlaybackErrorInfo(): PlaybackErrorInfo {
     val httpCode = httpStatusCodeOrNull()
+    val hasInvalidLoginContext = findCause<YTPlayerUtils.InvalidPlaybackLoginContextException>() != null
+    val hasLoginRequiredException = findCause<YTPlayerUtils.LoginRequiredForPlaybackException>() != null
     val invalidPlaybackLoginContextUrl = invalidPlaybackLoginContextUrl()
     val externalLoginRecoveryUrl = loginRecoveryUrl()
     val loginRecoveryUrl = invalidPlaybackLoginContextUrl ?: externalLoginRecoveryUrl
     val recoveryAction =
         when {
-            invalidPlaybackLoginContextUrl != null -> PlaybackRecoveryAction.RefreshLogin
+            hasInvalidLoginContext || invalidPlaybackLoginContextUrl != null -> PlaybackRecoveryAction.RefreshLogin
             externalLoginRecoveryUrl != null -> PlaybackRecoveryAction.OpenYouTubeMusic
+            hasLoginRequiredException -> PlaybackRecoveryAction.RefreshLogin
             else -> null
         }
     val kind =
         when {
-            invalidPlaybackLoginContextUrl != null -> PlaybackErrorKind.LoginRefreshRequired
+            hasInvalidLoginContext || invalidPlaybackLoginContextUrl != null -> PlaybackErrorKind.LoginRefreshRequired
 
-            externalLoginRecoveryUrl != null -> PlaybackErrorKind.ConfirmationRequired
+            hasLoginRequiredException || externalLoginRecoveryUrl != null -> PlaybackErrorKind.ConfirmationRequired
 
             errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED -> PlaybackErrorKind.NoInternet
 
@@ -94,15 +97,12 @@ internal fun PlaybackException.httpStatusCodeOrNull(): Int? {
 }
 
 internal fun PlaybackException.invalidPlaybackLoginContextUrl(): String? =
-    findCause<YTPlayerUtils.InvalidPlaybackLoginContextException>()?.targetUrl
+    findCause<YTPlayerUtils.InvalidPlaybackLoginContextException>()?.targetUrl?.takeIf(String::isNotBlank)
 
-internal fun PlaybackException.loginRecoveryUrl(): String? {
-    findCause<YTPlayerUtils.LoginRequiredForPlaybackException>()?.let { return it.targetUrl }
+internal fun PlaybackException.loginRecoveryUrl(): String? =
+    findCause<YTPlayerUtils.LoginRequiredForPlaybackException>()?.targetUrl?.takeIf(String::isNotBlank)
 
-    return null
-}
-
-private inline fun <reified T : Throwable> Throwable.findCause(): T? {
+internal inline fun <reified T : Throwable> Throwable.findCause(): T? {
     var throwable: Throwable? = this
     while (throwable != null) {
         if (throwable is T) return throwable

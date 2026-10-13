@@ -105,7 +105,7 @@ import moe.rukamori.archivetune.ui.screens.settings.DarkMode
 import moe.rukamori.archivetune.constants.HomeBackgroundStyle
 import moe.rukamori.archivetune.constants.PlaybackSource
 import moe.rukamori.archivetune.onboarding.OnboardingViewModel
-import moe.rukamori.archivetune.ui.screens.settings.FlacTokenInputs
+import moe.rukamori.archivetune.ui.screens.settings.player.FlacTokenInputs
 import moe.rukamori.archivetune.ui.screens.settings.SpotifyLoginSheet
 import moe.rukamori.archivetune.ui.screens.settings.TokenEditorDialog
 import moe.rukamori.archivetune.ui.settings.SettingsDimensions
@@ -1292,7 +1292,7 @@ private fun CustomizationPage(
                 }
 
                 item {
-                    moe.rukamori.archivetune.ui.screens.settings.PlaybackSourceSelector(
+                    moe.rukamori.archivetune.ui.screens.settings.player.PlaybackSourceSelector(
                         playbackSource = playbackSource,
                         onPlaybackSourceChange = onPlaybackSourceChange,
                         onEnableLosslessChange = onEnableLosslessChange

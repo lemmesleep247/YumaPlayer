@@ -15,13 +15,16 @@ import moe.rukamori.archivetune.constants.PlayerStreamClient
 import moe.rukamori.archivetune.innertube.PlaybackAuthState
 import moe.rukamori.archivetune.innertube.YouTube
 import moe.rukamori.archivetune.innertube.models.YouTubeClient
+import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.VISIONOS
 import moe.rukamori.archivetune.innertube.models.YouTubeClient.Companion.WEB_REMIX
 import moe.rukamori.archivetune.innertube.models.response.PlayerResponse
 import moe.rukamori.archivetune.utils.PlaybackErrorMapper
 import moe.rukamori.archivetune.utils.StreamClientUtils
 import moe.rukamori.archivetune.utils.StreamUrlCache
+import moe.rukamori.archivetune.utils.YTPlayerUtils
 import moe.rukamori.archivetune.utils.YTPlayerUtils.BadStreamPlayerResponseException
 import moe.rukamori.archivetune.utils.YTPlayerUtils.BotDetectionPlaybackException
+import moe.rukamori.archivetune.utils.YTPlayerUtils.InvalidPlaybackLoginContextException
 import moe.rukamori.archivetune.utils.YTPlayerUtils.LoginRequiredForPlaybackException
 import moe.rukamori.archivetune.utils.YTPlayerUtils.PlaybackData
 import moe.rukamori.archivetune.utils.getPlaybackPlayerResponseOrNull
@@ -67,6 +70,9 @@ object PlaybackStreamFetcher {
                 )
             deferred.complete(result)
             result
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            deferred.cancel(e)
+            throw e
         } catch (e: Throwable) {
             deferred.complete(Result.failure(e))
             throw e
@@ -82,8 +88,8 @@ object PlaybackStreamFetcher {
         connectivityManager: ConnectivityManager,
         preferredStreamClient: PlayerStreamClient,
         networkMetered: Boolean?,
-    ): Result<PlaybackData> =
-        runCatching {
+    ): Result<PlaybackData> {
+        return try {
             val attempts =
                 when (audioQuality) {
                     AudioQuality.HIGHEST -> listOf(AudioQuality.HIGHEST, AudioQuality.HIGH, AudioQuality.LOW)
@@ -94,28 +100,10 @@ object PlaybackStreamFetcher {
 
             var lastError: Throwable? = null
             var didRefreshIpRotationAfterBotDetection = false
-            for (attempt in attempts) {
+            for ((attemptIndex, attempt) in attempts.withIndex()) {
                 val attemptResult =
-                    runCatching {
-                        playerResponseForPlaybackOnce(
-                            videoId = videoId,
-                            playlistId = playlistId,
-                            audioQuality = attempt,
-                            connectivityManager = connectivityManager,
-                            preferredStreamClient = preferredStreamClient,
-                            networkMetered = networkMetered,
-                        )
-                    }
-                if (attemptResult.isSuccess) return@runCatching attemptResult.getOrThrow()
-                lastError = attemptResult.exceptionOrNull()
-                if (
-                    !didRefreshIpRotationAfterBotDetection &&
-                    lastError is BotDetectionPlaybackException &&
-                    PlaybackAuthCoordinator.refreshIpRotationForBotDetection(videoId, lastError)
-                ) {
-                    didRefreshIpRotationAfterBotDetection = true
-                    val rotatedAttemptResult =
-                        runCatching {
+                    try {
+                        Result.success(
                             playerResponseForPlaybackOnce(
                                 videoId = videoId,
                                 playlistId = playlistId,
@@ -124,13 +112,87 @@ object PlaybackStreamFetcher {
                                 preferredStreamClient = preferredStreamClient,
                                 networkMetered = networkMetered,
                             )
+                        )
+                    } catch (e: kotlinx.coroutines.CancellationException) {
+                        throw e
+                    } catch (e: Throwable) {
+                        Result.failure(e)
+                    }
+                if (attemptResult.isSuccess) return Result.success(attemptResult.getOrThrow())
+                lastError = attemptResult.exceptionOrNull()
+                if (lastError is kotlinx.coroutines.CancellationException) {
+                    throw lastError
+                }
+                if (
+                    !didRefreshIpRotationAfterBotDetection &&
+                    lastError is BotDetectionPlaybackException &&
+                    PlaybackAuthCoordinator.refreshIpRotationForBotDetection(videoId, lastError)
+                ) {
+                    didRefreshIpRotationAfterBotDetection = true
+                    val rotatedAttemptResult =
+                        try {
+                            Result.success(
+                                playerResponseForPlaybackOnce(
+                                    videoId = videoId,
+                                    playlistId = playlistId,
+                                    audioQuality = attempt,
+                                    connectivityManager = connectivityManager,
+                                    preferredStreamClient = preferredStreamClient,
+                                    networkMetered = networkMetered,
+                                )
+                            )
+                        } catch (e: kotlinx.coroutines.CancellationException) {
+                            throw e
+                        } catch (e: Throwable) {
+                            Result.failure(e)
                         }
-                    if (rotatedAttemptResult.isSuccess) return@runCatching rotatedAttemptResult.getOrThrow()
+                    if (rotatedAttemptResult.isSuccess) return Result.success(rotatedAttemptResult.getOrThrow())
                     lastError = rotatedAttemptResult.exceptionOrNull()
+                    if (lastError is kotlinx.coroutines.CancellationException) {
+                        throw lastError
+                    }
+                }
+
+                val isTerminalLogin = lastError is LoginRequiredForPlaybackException ||
+                    lastError is YTPlayerUtils.InvalidPlaybackLoginContextException
+
+                if (isTerminalLogin) {
+                    if (attemptIndex < attempts.lastIndex) {
+                        if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                            moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                                "FALLBACK_LADDER_TERMINAL_LOGIN",
+                                attemptId = moe.rukamori.archivetune.playback.PlaybackTiming.getAttemptId(videoId),
+                                mediaId = videoId,
+                                extra = "prevented_rerun=${attemptIndex + 1} remaining=${attempts.size - attemptIndex - 1} reason=${lastError.message.orEmpty()}",
+                            )
+                        }
+                    }
+                    break
+                }
+
+                if (lastError is BotDetectionPlaybackException) {
+                    break
+                }
+
+                if (attemptIndex >= 1 && attemptIndex < attempts.lastIndex) {
+                    if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                        moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                            "FALLBACK_LADDER_RETRY_BOUNDED",
+                            attemptId = moe.rukamori.archivetune.playback.PlaybackTiming.getAttemptId(videoId),
+                            mediaId = videoId,
+                            extra = "prevented_rerun=${attemptIndex + 1} err=${lastError?.javaClass?.simpleName}",
+                        )
+                    }
+                    break
                 }
             }
             throw lastError ?: IllegalStateException("Failed to resolve stream")
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            Result.failure(e)
         }
+    }
 
     suspend fun playerResponseForDownload(
         videoId: String,
@@ -138,8 +200,8 @@ object PlaybackStreamFetcher {
         audioQuality: AudioQuality,
         connectivityManager: ConnectivityManager,
         networkMetered: Boolean? = null,
-    ): Result<PlaybackData> =
-        runCatching {
+    ): Result<PlaybackData> {
+        return try {
             Timber.tag(logTag).i("Fetching download response for videoId: $videoId, playlistId: $playlistId")
             var lastError: Throwable? = null
 
@@ -154,9 +216,12 @@ object PlaybackStreamFetcher {
                         networkMetered = networkMetered,
                     )
 
-                if (attemptResult.isSuccess) return@runCatching attemptResult.getOrThrow()
+                if (attemptResult.isSuccess) return Result.success(attemptResult.getOrThrow())
 
                 lastError = attemptResult.exceptionOrNull()
+                if (lastError is kotlinx.coroutines.CancellationException) {
+                    throw lastError
+                }
                 Timber.tag(logTag).w(
                     lastError,
                     "Download stream resolution failed with preferred client %s for %s",
@@ -166,7 +231,12 @@ object PlaybackStreamFetcher {
             }
 
             throw lastError ?: IllegalStateException("Failed to resolve download stream for $videoId")
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            Result.failure(e)
         }
+    }
 
     internal suspend fun playerResponseForPlaybackOnce(
         videoId: String,
@@ -177,6 +247,12 @@ object PlaybackStreamFetcher {
         networkMetered: Boolean?,
     ): PlaybackData {
         Timber.tag(logTag).i("Fetching player response for videoId: $videoId, playlistId: $playlistId")
+        val fetchAttemptId = if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            moe.rukamori.archivetune.playback.PlaybackTiming.getAttemptId(videoId)
+        } else 0L
+        val fetchStartNanos = if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            moe.rukamori.archivetune.playback.PlaybackTiming.nowNanos()
+        } else 0L
         val signatureTimestamp = PlaybackStreamUrlDecipher.getSignatureTimestampOrNull(videoId)
         Timber.tag(logTag).v("Signature timestamp: $signatureTimestamp")
 
@@ -206,6 +282,25 @@ object PlaybackStreamFetcher {
             }
         Timber.tag(logTag).v("Session authentication status: $authStatus (sessionId=${sessionId.orEmpty()})")
 
+        if (moe.rukamori.archivetune.BuildConfig.DEBUG && canUseLoggedInPlayback) {
+            val fastPathData =
+                tryVisionOsFastPath(
+                    videoId = videoId,
+                    playlistId = playlistId,
+                    audioQuality = audioQuality,
+                    connectivityManager = connectivityManager,
+                    networkMetered = networkMetered,
+                    signatureTimestamp = signatureTimestamp,
+                    authState = authState,
+                    canUseLoggedInPlayback = canUseLoggedInPlayback,
+                    fetchAttemptId = fetchAttemptId,
+                    fetchStartNanos = fetchStartNanos,
+                )
+            if (fastPathData != null) {
+                return fastPathData
+            }
+        }
+
         var format: PlayerResponse.StreamingData.Format? = null
         var streamUrl: String? = null
         var streamExpiresInSeconds: Int? = null
@@ -226,6 +321,12 @@ object PlaybackStreamFetcher {
         }
 
         val metadataClient = PlaybackClientSelector.resolveMetadataClient(authState)
+        if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                "METADATA_CLIENT_SELECTED", attemptId = fetchAttemptId, mediaId = videoId,
+                extra = "client=${PlaybackClientSelector.describeClient(metadataClient)}",
+            )
+        }
 
         Timber.tag(logTag).i("Fetching metadata response using client: ${metadataClient.clientName}")
 
@@ -253,12 +354,17 @@ object PlaybackStreamFetcher {
                             webClientPoTokenEnabled = true,
                         )
                     }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.tag(logTag).w(e, "PoToken generation failed for metadata request")
                 }
             }
         }
 
+        val metadataStartNanos = if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            moe.rukamori.archivetune.playback.PlaybackTiming.nowNanos()
+        } else 0L
         var metadataResult =
             YouTube.player(
                 videoId = videoId,
@@ -269,6 +375,13 @@ object PlaybackStreamFetcher {
                 setLogin = true,
                 authState = authState,
             )
+        if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                "METADATA_FETCH_END", attemptId = fetchAttemptId, mediaId = videoId,
+                startNanos = metadataStartNanos,
+                extra = "client=${PlaybackClientSelector.describeClient(metadataClient)} ok=${metadataResult.isSuccess}",
+            )
+        }
         val metadataFailure = metadataResult.exceptionOrNull()
         if (metadataFailure != null && canUseLoggedInPlayback && metadataFailure.isInvalidPlaybackLoginContextFailure()) {
             Timber.tag(logTag).w(
@@ -309,6 +422,8 @@ object PlaybackStreamFetcher {
                                 webClientPoTokenEnabled = true,
                             )
                         }
+                    } catch (e: kotlinx.coroutines.CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Timber.tag(logTag).w(e, "PoToken generation failed for metadata retry request")
                     }
@@ -334,8 +449,15 @@ object PlaybackStreamFetcher {
                 ?.takeIf { it > 0 }
                 ?.times(1000L)
 
+        val orderedClients = PlaybackClientSelector.buildStreamClientOrder(preferredStreamClient, authState)
+        if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                "STREAM_CLIENT_ORDER", attemptId = fetchAttemptId, mediaId = videoId,
+                extra = "count=${orderedClients.size} first=${orderedClients.firstOrNull()?.let { PlaybackClientSelector.describeClient(it) }}",
+            )
+        }
         val streamClients =
-            PlaybackClientSelector.buildStreamClientOrder(preferredStreamClient, authState).filterNot { client ->
+            orderedClients.filterNot { client ->
                 val blocked =
                     StreamUrlCache.isStreamClientTemporarilyBlocked(
                         videoId = videoId,
@@ -365,6 +487,15 @@ object PlaybackStreamFetcher {
             streamClientUsed = null
             streamExpiresInSeconds = null
             streamPlayerResponse = null
+            val clientAttemptStartNanos = if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                moe.rukamori.archivetune.playback.PlaybackTiming.nowNanos()
+            } else 0L
+            if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                    "STREAM_CLIENT_ATTEMPT_START", attemptId = fetchAttemptId, mediaId = videoId,
+                    extra = "try=${index + 1}/${streamClients.size} client=${PlaybackClientSelector.describeClient(client)}",
+                )
+            }
 
             Timber.tag(logTag).v(
                 "Trying ${if (client == PlaybackClientSelector.MAIN_CLIENT) "MAIN_CLIENT" else "fallback client"} ${index + 1}/${streamClients.size}: ${PlaybackClientSelector.describeClient(
@@ -374,6 +505,13 @@ object PlaybackStreamFetcher {
 
             if (client != PlaybackClientSelector.MAIN_CLIENT && client.loginRequired && !canUseLoggedInPlayback) {
                 Timber.tag(logTag).i("Skipping client ${PlaybackClientSelector.describeClient(client)} - requires login but auth mode is ${authMode()}")
+                if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                    moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                        "STREAM_CLIENT_SKIPPED", attemptId = fetchAttemptId, mediaId = videoId,
+                        startNanos = clientAttemptStartNanos,
+                        extra = "try=${index + 1} client=${PlaybackClientSelector.describeClient(client)} reason=login-required",
+                    )
+                }
                 continue
             }
 
@@ -393,15 +531,33 @@ object PlaybackStreamFetcher {
                         ).getPlaybackPlayerResponseOrNull(videoId, authState)
                 }
 
-            if (streamPlayerResponse == null) continue
+            if (streamPlayerResponse == null) {
+                if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                    moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                        "STREAM_CLIENT_FAILED", attemptId = fetchAttemptId, mediaId = videoId,
+                        startNanos = clientAttemptStartNanos,
+                        extra = "try=${index + 1} client=${PlaybackClientSelector.describeClient(client)} reason=empty-response",
+                    )
+                }
+                continue
+            }
 
             var playabilityStatus = streamPlayerResponse.playabilityStatus
             if (playabilityStatus.status != "OK") {
                 var reason = playabilityStatus.reason.orEmpty()
-                var isLoginRecovery = PlaybackErrorMapper.isLoginRecoveryError(reason)
+                var isLoginRecovery = PlaybackErrorMapper.isLoginRecoveryError(playabilityStatus.status, reason)
                 var isBotDetection = PlaybackErrorMapper.isBotDetectionError(reason)
 
                 if (isBotDetection && !didRepairAuthAfterBotDetection) {
+                    val botRepairStartNanos = if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                        moe.rukamori.archivetune.playback.PlaybackTiming.nowNanos()
+                    } else 0L
+                    if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                        moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                            "BOT_REPAIR_START", attemptId = fetchAttemptId, mediaId = videoId,
+                            extra = "try=${index + 1} client=${PlaybackClientSelector.describeClient(client)}",
+                        )
+                    }
                     val repairedAuthState =
                         PlaybackAuthCoordinator.repairAuthStateAfterBotDetection(
                             videoId = videoId,
@@ -418,6 +574,13 @@ object PlaybackStreamFetcher {
                         canUseLoggedInPlayback = authState.hasPlaybackLoginContext
                         client = if (shouldUseWebRemix) WEB_REMIX else client
                         didRepairAuthAfterBotDetection = true
+                        if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                            moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                                "BOT_REPAIR_END", attemptId = fetchAttemptId, mediaId = videoId,
+                                startNanos = botRepairStartNanos,
+                                extra = "try=${index + 1} client=${PlaybackClientSelector.describeClient(client)}",
+                            )
+                        }
                         Timber.tag(logTag).i(
                             "Retrying %s for %s after repairing playback auth",
                             PlaybackClientSelector.describeClient(client),
@@ -438,7 +601,7 @@ object PlaybackStreamFetcher {
 
                         playabilityStatus = streamPlayerResponse.playabilityStatus
                         reason = playabilityStatus.reason.orEmpty()
-                        isLoginRecovery = PlaybackErrorMapper.isLoginRecoveryError(reason)
+                        isLoginRecovery = PlaybackErrorMapper.isLoginRecoveryError(playabilityStatus.status, reason)
                         isBotDetection = PlaybackErrorMapper.isBotDetectionError(reason)
                     }
                 }
@@ -476,6 +639,13 @@ object PlaybackStreamFetcher {
                     } else if (isBotDetection) {
                         botDetectedClients.add(PlaybackClientSelector.describeClient(client))
                     }
+                    if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                        moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                            "STREAM_CLIENT_FAILED", attemptId = fetchAttemptId, mediaId = videoId,
+                            startNanos = clientAttemptStartNanos,
+                            extra = "try=${index + 1} client=${PlaybackClientSelector.describeClient(client)} reason=status-${playabilityStatus.status}",
+                        )
+                    }
                     continue
                 }
             }
@@ -488,7 +658,16 @@ object PlaybackStreamFetcher {
                     isMetered,
                 )
 
-            if (candidates.isEmpty()) continue
+            if (candidates.isEmpty()) {
+                if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                    moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                        "STREAM_CLIENT_FAILED", attemptId = fetchAttemptId, mediaId = videoId,
+                        startNanos = clientAttemptStartNanos,
+                        extra = "try=${index + 1} client=${PlaybackClientSelector.describeClient(client)} reason=no-candidates",
+                    )
+                }
+                continue
+            }
 
             var selectedFormat: PlayerResponse.StreamingData.Format? = null
             var selectedUrl: String? = null
@@ -516,12 +695,26 @@ object PlaybackStreamFetcher {
                     audioQuality,
                     candidates.size,
                 )
+                if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                    moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                        "STREAM_CLIENT_FAILED", attemptId = fetchAttemptId, mediaId = videoId,
+                        startNanos = clientAttemptStartNanos,
+                        extra = "try=${index + 1} client=${PlaybackClientSelector.describeClient(client)} reason=no-url formats=${candidates.size}",
+                    )
+                }
                 continue
             }
 
             format = selectedFormat
             streamUrl = selectedUrl
             streamClientUsed = client
+            if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                    "STREAM_CLIENT_SUCCESS", attemptId = fetchAttemptId, mediaId = videoId,
+                    startNanos = clientAttemptStartNanos,
+                    extra = "try=${index + 1} client=${PlaybackClientSelector.describeClient(client)} itag=${selectedFormat.itag}",
+                )
+            }
             streamExpiresInSeconds =
                 StreamUrlCache.resolveExpireSeconds(
                     apiExpire = streamPlayerResponse.streamingData?.expiresInSeconds,
@@ -536,16 +729,6 @@ object PlaybackStreamFetcher {
         }
 
         if (streamPlayerResponse == null) {
-            gateFailure?.let { failure ->
-                Timber.tag(logTag).w(
-                    "Playback requires login recovery for $videoId via ${failure.clientName} (${failure.status}): ${failure.reason.orEmpty()}",
-                )
-                throw LoginRequiredForPlaybackException(
-                    videoId = videoId,
-                    targetUrl = "https://music.youtube.com/watch?v=$videoId",
-                    reason = failure.reason,
-                )
-            }
             if (botDetectedClients.isNotEmpty()) {
                 Timber.tag(logTag).e("Bot detection triggered on clients: $botDetectedClients - all clients failed")
                 throw BotDetectionPlaybackException(
@@ -553,20 +736,84 @@ object PlaybackStreamFetcher {
                     clients = botDetectedClients.toSet(),
                 )
             }
+            gateFailure?.let { failure ->
+                Timber.tag(logTag).w(
+                    "Playback requires login recovery for $videoId via ${failure.clientName} (${failure.status}): ${failure.reason.orEmpty()}",
+                )
+                if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                    moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                        "LOGIN_REQUIRED_RESOLVER_BUILT",
+                        attemptId = fetchAttemptId,
+                        mediaId = videoId,
+                        extra = "status=${failure.status} reason=${failure.reason.orEmpty()}",
+                    )
+                }
+                throw LoginRequiredForPlaybackException(
+                    videoId = videoId,
+                    targetUrl = "https://music.youtube.com/watch?v=$videoId",
+                    reason = failure.reason,
+                )
+            }
             Timber.tag(logTag).e("Bad stream player response - all clients failed")
             throw BadStreamPlayerResponseException(videoId)
         }
 
         if (streamPlayerResponse.playabilityStatus.status != "OK") {
-            val errorReason = streamPlayerResponse.playabilityStatus.reason
-            if (PlaybackErrorMapper.isLoginRecoveryError(errorReason.orEmpty())) {
+            val status = streamPlayerResponse.playabilityStatus.status
+            val errorReason = streamPlayerResponse.playabilityStatus.reason.orEmpty()
+
+            if (PlaybackErrorMapper.isBotDetectionError(errorReason)) {
+                botDetectedClients.add(streamClientUsed?.let { PlaybackClientSelector.describeClient(it) } ?: "last client")
+                throw BotDetectionPlaybackException(
+                    videoId = videoId,
+                    clients = botDetectedClients.toSet(),
+                )
+            }
+
+            if (PlaybackErrorMapper.isLoginRecoveryError(status, errorReason)) {
                 Timber.tag(logTag).w("Playback requires login recovery for $videoId: $errorReason")
+                if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                    moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                        "LOGIN_REQUIRED_RESOLVER_BUILT",
+                        attemptId = fetchAttemptId,
+                        mediaId = videoId,
+                        extra = "status=$status reason=$errorReason",
+                    )
+                }
                 throw LoginRequiredForPlaybackException(
                     videoId = videoId,
                     targetUrl = "https://music.youtube.com/watch?v=$videoId",
                     reason = errorReason,
                 )
             }
+
+            if (botDetectedClients.isNotEmpty()) {
+                Timber.tag(logTag).e("Bot detection triggered on clients: $botDetectedClients")
+                throw BotDetectionPlaybackException(
+                    videoId = videoId,
+                    clients = botDetectedClients.toSet(),
+                )
+            }
+
+            gateFailure?.let { failure ->
+                Timber.tag(logTag).w(
+                    "Playback requires login recovery for $videoId via earlier client ${failure.clientName} (${failure.status}): ${failure.reason.orEmpty()}",
+                )
+                if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+                    moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                        "LOGIN_REQUIRED_RESOLVER_BUILT",
+                        attemptId = fetchAttemptId,
+                        mediaId = videoId,
+                        extra = "status=${failure.status} reason=${failure.reason.orEmpty()}",
+                    )
+                }
+                throw LoginRequiredForPlaybackException(
+                    videoId = videoId,
+                    targetUrl = "https://music.youtube.com/watch?v=$videoId",
+                    reason = failure.reason,
+                )
+            }
+
             Timber.tag(logTag).e("Playability status not OK: $errorReason")
             throw PlaybackException(
                 errorReason,
@@ -606,6 +853,13 @@ object PlaybackStreamFetcher {
             requireNotNull(streamClientUsed) {
                 "No resolved stream client for validated playback URL"
             }
+        if (moe.rukamori.archivetune.BuildConfig.DEBUG) {
+            moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                "FINAL_CLIENT_USED", attemptId = fetchAttemptId, mediaId = videoId,
+                startNanos = fetchStartNanos,
+                extra = "client=${PlaybackClientSelector.describeClient(resolvedStreamClient)} itag=${format.itag}",
+            )
+        }
 
         StreamUrlCache.putCachedStreamUrl(
             StreamUrlCache.buildStreamCacheKey(videoId, format.itag, resolvedStreamClient, authState.fingerprint),
@@ -662,6 +916,8 @@ object PlaybackStreamFetcher {
                             webClientPoTokenEnabled = true,
                         )
                     }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Timber.tag(logTag).w(e, "PoToken generation failed for metadata request")
                 }
@@ -679,5 +935,158 @@ object PlaybackStreamFetcher {
                 authState = authState,
             ).onSuccess { Timber.tag(logTag).d("Successfully fetched metadata") }
             .onFailure { Timber.tag(logTag).e(it, "Failed to fetch metadata") }
+    }
+
+    private suspend fun tryVisionOsFastPath(
+        videoId: String,
+        playlistId: String?,
+        audioQuality: AudioQuality,
+        connectivityManager: ConnectivityManager,
+        networkMetered: Boolean?,
+        signatureTimestamp: Int?,
+        authState: PlaybackAuthState,
+        canUseLoggedInPlayback: Boolean,
+        fetchAttemptId: Long,
+        fetchStartNanos: Long,
+    ): PlaybackData? {
+        val fastPathStartNanos = moe.rukamori.archivetune.playback.PlaybackTiming.nowNanos()
+        moe.rukamori.archivetune.playback.PlaybackTiming.log(
+            "FAST_PATH_START",
+            attemptId = fetchAttemptId,
+            mediaId = videoId,
+            startNanos = fastPathStartNanos,
+            extra = "status=START client=VISIONOS",
+        )
+
+        var fallbackReason = "unknown"
+        try {
+            val response =
+                YouTube
+                    .player(
+                        videoId = videoId,
+                        playlistId = playlistId,
+                        client = VISIONOS,
+                        signatureTimestamp = signatureTimestamp,
+                        setLogin = canUseLoggedInPlayback,
+                        authState = authState,
+                    ).getPlaybackPlayerResponseOrNull(videoId, authState)
+
+            if (response == null) {
+                fallbackReason = "null_response"
+            } else if (response.playabilityStatus.status != "OK") {
+                val reason = response.playabilityStatus.reason.orEmpty()
+                fallbackReason = when {
+                    PlaybackErrorMapper.isBotDetectionError(reason) -> "bot_detection"
+                    PlaybackErrorMapper.isLoginRecoveryError(reason) -> "login_recovery"
+                    else -> "status_${response.playabilityStatus.status}"
+                }
+            } else if ((response.videoDetails?.lengthSeconds?.toLongOrNull() ?: 0L) <= 0L) {
+                fallbackReason = "invalid_duration"
+            } else {
+                val expectedDurationMs = (response.videoDetails?.lengthSeconds?.toLongOrNull() ?: 0L) * 1000L
+                val isMetered = networkMetered ?: connectivityManager.isActiveNetworkMetered
+                val candidates =
+                    PlaybackFormatSelector.selectAudioFormatCandidates(
+                        response,
+                        audioQuality,
+                        isMetered,
+                    )
+
+                if (candidates.isEmpty()) {
+                    fallbackReason = "no_audio_candidates"
+                } else {
+                    var selectedFormat: PlayerResponse.StreamingData.Format? = null
+                    var selectedUrl: String? = null
+
+                    for (candidate in candidates) {
+                        if (PlaybackFormatSelector.isLikelyPreview(candidate, expectedDurationMs)) continue
+                        if (PlaybackFormatSelector.shouldSkipCipheredWebCandidate(VISIONOS, candidate, authState)) continue
+
+                        val cacheKey = StreamUrlCache.buildStreamCacheKey(videoId, candidate.itag, VISIONOS, authState.fingerprint)
+                        val cached = StreamUrlCache.getCachedStreamUrl(cacheKey)
+                        val candidateUrl =
+                            if (cached != null && cached.expiresAtMs > System.currentTimeMillis() + StreamUrlCache.STREAM_URL_EXPIRY_SAFETY_MS) {
+                                cached.url
+                            } else {
+                                PlaybackStreamUrlDecipher.findUrlOrNull(candidate, videoId, VISIONOS, authState)
+                            } ?: continue
+
+                        selectedFormat = candidate
+                        selectedUrl = candidateUrl
+                        break
+                    }
+
+                    if (selectedFormat == null || selectedUrl == null) {
+                        fallbackReason = "no_playable_url"
+                    } else {
+                        val streamExpiresInSeconds =
+                            StreamUrlCache.resolveExpireSeconds(
+                                apiExpire = response.streamingData?.expiresInSeconds,
+                                streamUrl = selectedUrl,
+                            )
+
+                        StreamUrlCache.putCachedStreamUrl(
+                            StreamUrlCache.buildStreamCacheKey(videoId, selectedFormat.itag, VISIONOS, authState.fingerprint),
+                            selectedUrl,
+                            streamExpiresInSeconds,
+                            authState.fingerprint,
+                        )
+
+                        moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                            "FAST_PATH_SUCCESS",
+                            attemptId = fetchAttemptId,
+                            mediaId = videoId,
+                            startNanos = fastPathStartNanos,
+                            extra = "status=OK itag=${selectedFormat.itag}",
+                        )
+                        moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                            "FAST_PATH_TOTAL",
+                            attemptId = fetchAttemptId,
+                            mediaId = videoId,
+                            startNanos = fastPathStartNanos,
+                            extra = "status=SUCCESS",
+                        )
+                        moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                            "FINAL_CLIENT_USED",
+                            attemptId = fetchAttemptId,
+                            mediaId = videoId,
+                            startNanos = fetchStartNanos,
+                            extra = "client=${PlaybackClientSelector.describeClient(VISIONOS)} itag=${selectedFormat.itag}",
+                        )
+
+                        return PlaybackData(
+                            response.playerConfig?.audioConfig,
+                            response.videoDetails,
+                            response.playbackTracking,
+                            selectedFormat,
+                            selectedUrl,
+                            streamExpiresInSeconds,
+                            authState.fingerprint,
+                        )
+                    }
+                }
+            }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            Timber.tag(logTag).w(e, "VISIONOS fast path encountered unexpected error for %s", videoId)
+            fallbackReason = "exception_${e.javaClass.simpleName}"
+        }
+
+        moe.rukamori.archivetune.playback.PlaybackTiming.log(
+            "FAST_PATH_FALLBACK",
+            attemptId = fetchAttemptId,
+            mediaId = videoId,
+            startNanos = fastPathStartNanos,
+            extra = "status=FALLBACK reason=$fallbackReason",
+        )
+        moe.rukamori.archivetune.playback.PlaybackTiming.log(
+            "FAST_PATH_TOTAL",
+            attemptId = fetchAttemptId,
+            mediaId = videoId,
+            startNanos = fastPathStartNanos,
+            extra = "status=FALLBACK",
+        )
+        return null
     }
 }

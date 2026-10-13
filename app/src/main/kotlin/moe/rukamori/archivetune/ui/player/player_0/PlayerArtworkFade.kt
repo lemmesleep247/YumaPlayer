@@ -1,3 +1,9 @@
+/*
+ * YumaPlayer (2026) | Original work by MuwMix
+ * https://github.com/MuwMix/YumaPlayer
+ * GPL-3.0 License | Contributors: see git history
+ */
+
 package moe.rukamori.archivetune.ui.player.player_0
 
 import androidx.compose.ui.Modifier
@@ -10,9 +16,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 
 internal object PlayerArtworkFadeDefaults {
     const val PeekFraction = 0.45f
-
     const val TopFadeEnd = 0.18f
-    const val BottomFadeStart = 0.78f
+    const val BottomFadeStart = 0.72f
+    const val TopFadeIntensity = 0.75f
+    const val BottomFadeIntensity = 1.0f
 }
 
 internal fun Modifier.playerArtworkFade(
@@ -29,19 +36,17 @@ internal fun Modifier.playerArtworkFade(
     }
     .drawWithCache {
         val q = queueFractionProvider().coerceIn(0f, 1f)
+        val progress = (q / PlayerArtworkFadeDefaults.PeekFraction).coerceIn(0f, 1f)
 
-        val progress = (
-            q / PlayerArtworkFadeDefaults.PeekFraction
-        ).coerceIn(0f, 1f)
-
-        val edgeAlpha = 1f - progress
+        val topEdgeAlpha = 1f - (progress * PlayerArtworkFadeDefaults.TopFadeIntensity)
+        val bottomEdgeAlpha = 1f - (progress * PlayerArtworkFadeDefaults.BottomFadeIntensity)
 
         val mask = Brush.verticalGradient(
             colorStops = arrayOf(
-                0f to Color.Black.copy(alpha = edgeAlpha),
+                0f to Color.Black.copy(alpha = topEdgeAlpha),
                 PlayerArtworkFadeDefaults.TopFadeEnd to Color.Black,
                 PlayerArtworkFadeDefaults.BottomFadeStart to Color.Black,
-                1f to Color.Black.copy(alpha = edgeAlpha),
+                1f to Color.Black.copy(alpha = bottomEdgeAlpha),
             ),
             startY = 0f,
             endY = size.height,

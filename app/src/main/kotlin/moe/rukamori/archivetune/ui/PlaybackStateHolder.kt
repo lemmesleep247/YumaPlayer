@@ -14,7 +14,9 @@ import moe.rukamori.archivetune.db.entities.formattedBitrate
 import moe.rukamori.archivetune.db.entities.formattedQuality
 import moe.rukamori.archivetune.playback.PlayerConnection
 import moe.rukamori.archivetune.playback.smart.TrackAnalyzer
+import moe.rukamori.archivetune.ui.player.findCause
 import moe.rukamori.archivetune.ui.state.PlayerUiState
+import moe.rukamori.archivetune.utils.YTPlayerUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlaybackStateHolder(
@@ -30,6 +32,26 @@ class PlaybackStateHolder(
     private val sleepTimer get() = playerConnectionProvider()?.service?.sleepTimer
 
     init {
+        coroutineScope.launch {
+            connectionFlow
+                .filterNotNull()
+                .flatMapLatest { it.error }
+                .collect { error ->
+                    if (moe.rukamori.archivetune.BuildConfig.DEBUG && error != null) {
+                        val hasLogin = error.findCause<YTPlayerUtils.LoginRequiredForPlaybackException>() != null ||
+                            error.findCause<YTPlayerUtils.InvalidPlaybackLoginContextException>() != null
+                        if (hasLogin) {
+                            moe.rukamori.archivetune.playback.PlaybackTiming.log(
+                                "LOGIN_REQUIRED_UI_DELIVERED",
+                                mediaId = uiStateProvider().trackUrl,
+                                extra = "code=${error.errorCode}",
+                            )
+                        }
+                    }
+                    updateUiState { it.copy(playbackError = error) }
+                }
+        }
+
         coroutineScope.launch {
             connectionFlow
                 .filterNotNull()

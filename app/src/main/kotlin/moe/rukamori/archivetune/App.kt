@@ -66,6 +66,14 @@ class App :
     @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate() {
         super.onCreate()
+        val t0 = if (BuildConfig.DEBUG) moe.rukamori.archivetune.playback.PlaybackTiming.markProcessStart() else 0L
+        if (BuildConfig.DEBUG) {
+            moe.rukamori.archivetune.innertube.InnerTube.TimingHook.onRetry = { attempt, delayMs ->
+                Timber.tag(moe.rukamori.archivetune.playback.PlaybackTiming.TAG).d(
+                    "HTTP_RETRY attempt=$attempt delayMs=$delayMs tNs=${moe.rukamori.archivetune.playback.PlaybackTiming.nowNanos()}"
+                )
+            }
+        }
         instance = this
         if (currentProcessName()?.endsWith(":crash") == true) {
             Timber.plant(Timber.DebugTree())
@@ -74,6 +82,9 @@ class App :
         BotGuardTokenGenerator.initialize(this)
         PreferenceStore.start(this)
         Timber.plant(Timber.DebugTree())
+        if (BuildConfig.DEBUG) {
+            Timber.tag(moe.rukamori.archivetune.playback.PlaybackTiming.TAG).d("PROCESS_START tNs=$t0")
+        }
         try {
             Timber.plant(moe.rukamori.archivetune.utils.GlobalLogTree())
         } catch (_: Exception) {
