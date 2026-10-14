@@ -25,7 +25,7 @@ fun Context.isLowDataModeActive(): Boolean = isLowDataModeActive(dataStore.get(L
 
 fun Context.isLowDataModeActive(enabled: Boolean): Boolean {
     if (!enabled) return false
-    val connectivityManager = getSystemService<ConnectivityManager>() ?: return false
+    val connectivityManager = applicationContext.getSystemService<ConnectivityManager>() ?: return false
     val activeNetwork = connectivityManager.activeNetwork ?: return false
     val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
     return connectivityManager.isActiveNetworkMetered ||
@@ -40,13 +40,13 @@ fun rememberLowDataModeActive(): Boolean {
 
 @Composable
 fun rememberLowDataModeActive(enabled: Boolean): Boolean {
-    val context = LocalContext.current
-    var active by remember(context, enabled) {
-        mutableStateOf(context.isLowDataModeActive(enabled))
+    val appContext = LocalContext.current.applicationContext
+    var active by remember(appContext, enabled) {
+        mutableStateOf(appContext.isLowDataModeActive(enabled))
     }
 
-    DisposableEffect(context, enabled) {
-        val connectivityManager = context.getSystemService<ConnectivityManager>()
+    DisposableEffect(appContext, enabled) {
+        val connectivityManager = appContext.getSystemService<ConnectivityManager>()
         if (connectivityManager == null || !enabled) {
             active = false
             return@DisposableEffect onDispose {}
@@ -55,22 +55,22 @@ fun rememberLowDataModeActive(enabled: Boolean): Boolean {
         val callback =
             object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) {
-                    active = context.isLowDataModeActive(enabled)
+                    active = appContext.isLowDataModeActive(enabled)
                 }
 
                 override fun onCapabilitiesChanged(
                     network: Network,
                     networkCapabilities: NetworkCapabilities,
                 ) {
-                    active = context.isLowDataModeActive(enabled)
+                    active = appContext.isLowDataModeActive(enabled)
                 }
 
                 override fun onLost(network: Network) {
-                    active = context.isLowDataModeActive(enabled)
+                    active = appContext.isLowDataModeActive(enabled)
                 }
             }
 
-        active = context.isLowDataModeActive(enabled)
+        active = appContext.isLowDataModeActive(enabled)
         val request =
             NetworkRequest
                 .Builder()
@@ -80,7 +80,7 @@ fun rememberLowDataModeActive(enabled: Boolean): Boolean {
         runCatching {
             connectivityManager.registerNetworkCallback(request, callback)
         }.onFailure {
-            active = context.isLowDataModeActive(enabled)
+            active = appContext.isLowDataModeActive(enabled)
         }
 
         onDispose {

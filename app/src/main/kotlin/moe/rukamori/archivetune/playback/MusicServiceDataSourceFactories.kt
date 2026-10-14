@@ -35,7 +35,7 @@ internal fun MusicService.createCacheDataSource(): CacheDataSource.Factory =
         .setUpstreamDataSourceFactory(
             DataSource.Factory {
                 createPlayerCacheDataSourceFactory(
-                    cacheWriteEnabled = !isLowDataModeActive(),
+                    cacheWriteEnabled = !applicationContext.isLowDataModeActive(),
                 ).createDataSource()
             },
         ).setCacheWriteDataSinkFactory(null)
@@ -62,7 +62,7 @@ internal fun MusicService.createDataSourceFactory(): DataSource.Factory {
 internal fun MusicService.createResolvedUpstreamDataSourceFactory(): DataSource.Factory {
     val youtubeMediaFactory =
         DefaultDataSource.Factory(
-            this,
+            applicationContext,
             ChunkedDataSource.Factory(
                 upstream = OkHttpDataSource.Factory(mediaOkHttpClient),
                 chunkBytes = STREAM_CHUNK_BYTES,
@@ -70,7 +70,7 @@ internal fun MusicService.createResolvedUpstreamDataSourceFactory(): DataSource.
         )
     val extractorMediaFactory =
         DefaultDataSource.Factory(
-            this,
+            applicationContext,
             OkHttpDataSource.Factory(extractorMediaOkHttpClient),
         )
     val routingFactory =

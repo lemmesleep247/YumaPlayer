@@ -11,8 +11,10 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
+import timber.log.Timber
 
 /**
  * Simple NetworkConnectivityObserver based on OuterTune's implementation
@@ -21,8 +23,11 @@ import kotlinx.coroutines.flow.receiveAsFlow
 class NetworkConnectivityObserver(
     context: Context,
 ) {
+    private val appContext = context.applicationContext
     private val connectivityManager =
-        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+    private val isRegistered = AtomicBoolean(false)
 
     private val _networkStatus = Channel<Boolean>(Channel.CONFLATED)
     val networkStatus = _networkStatus.receiveAsFlow()
@@ -48,6 +53,7 @@ class NetworkConnectivityObserver(
 
         try {
             connectivityManager.registerNetworkCallback(request, networkCallback)
+            isRegistered.set(true)
         } catch (e: Exception) {
             // Fallback: assume connected if registration fails
             _networkStatus.trySend(true)
@@ -59,7 +65,14 @@ class NetworkConnectivityObserver(
     }
 
     fun unregister() {
-        connectivityManager.unregisterNetworkCallback(networkCallback)
+        if (isRegistered.compareAndSet(true, false)) {
+            try {
+                connectivityManager.unregisterNetworkCallback(networkCallback)
+            } catch (e: IllegalArgumentException) {
+                Timber.tag("NetworkConnectivityObserver").w(e, "Callback was not registered")
+            }
+        }
+        _networkStatus.close()
     }
 
     /**

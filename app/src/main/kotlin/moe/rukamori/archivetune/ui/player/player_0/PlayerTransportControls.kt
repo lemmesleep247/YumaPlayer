@@ -9,10 +9,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Pause
@@ -41,23 +43,22 @@ import moe.rukamori.archivetune.ui.player.player_0.buttons.PlayerAction
 import moe.rukamori.archivetune.ui.state.PlayerUiState
 import moe.rukamori.archivetune.ui.utils.bounceClick
 
-private val ContainerHorizontalPad = 0.dp // Прижимаем shuffle/repeat ближе к краям экрана
-private val CapsuleHeight          = 92.dp // Высота капсулы
-private val CapsuleMarginHoriz     = 6.dp // Зазор между капсулой и внешними кнопками
-private val CapsulePadHorizontal   = 20.dp // Внутренний отступ внутри капсулы до кнопок переключения
-private val CapsuleBorderWidth     = 0.5.dp
+private val ContainerHorizontalPad = 0.dp
 
-// Внешние кнопки (Shuffle / Repeat) — компактные
-private val OuterButtonSize        = 40.dp
-private val OuterIconSize          = 22.dp
+private val CapsuleHeight           = 88.dp
+private val CapsuleMarginHoriz      = 8.dp
+private val CapsulePadHorizontal    = 12.dp
+private val CapsuleBorderWidth      = 0.5.dp
 
-// Кнопки переключения внутри капсулы (Previous / Next) — крупнее внешних
-private val SkipButtonSize         = 52.dp
-private val SkipIconSize           = 34.dp
+private val OuterButtonSize         = 48.dp
+private val OuterIconSize           = 26.dp
 
-// Центральная кнопка (Play / Pause)
-private val CenterButtonSize       = 74.dp
-private val CenterIconSize         = 52.dp
+
+private val SkipButtonSize          = 54.dp
+private val SkipIconSize            = 52.dp
+
+private val CenterButtonSize        = 72.dp
+private val CenterIconSize          = 62.dp
 
 @Composable
 fun PlayerTransportControls(
@@ -130,10 +131,11 @@ fun PlayerTransportControls(
                 )
             }
 
+            Spacer(modifier = Modifier.width(CapsuleMarginHoriz))
+
             Row(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = CapsuleMarginHoriz)
                     .height(CapsuleHeight)
                     .clip(CircleShape)
                     .background(animatedAccentColor.copy(alpha = 0.12f))
@@ -223,6 +225,8 @@ fun PlayerTransportControls(
                 }
             }
 
+            Spacer(modifier = Modifier.width(CapsuleMarginHoriz))
+
             // Repeat
             Box(
                 modifier = Modifier
@@ -243,8 +247,6 @@ fun PlayerTransportControls(
             }
         }
     }
-
-
 }
 
 
