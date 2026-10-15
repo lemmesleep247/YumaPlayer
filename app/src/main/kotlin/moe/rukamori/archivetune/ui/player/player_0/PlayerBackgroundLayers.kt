@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +56,13 @@ fun PlayerBackgroundLayers(
     queueFractionProvider: () -> Float = { 0f },
     onColorsExtracted: (vibrant: Int, darkMuted: Int, gradient: Int) -> Unit = { _, _, _ -> },
 ) {
+
+    val currentState by rememberUpdatedState(state)
+    val currentCanvasState by rememberUpdatedState(canvasState)
+    val currentExpansionProvider by rememberUpdatedState(expansionFractionProvider)
+    val currentLyricsProvider by rememberUpdatedState(lyricsFractionProvider)
+    val currentQueueProvider by rememberUpdatedState(queueFractionProvider)
+
     val blurOverlayAlpha by animateFloatAsState(
         targetValue = if (state.isBlurBackgroundEnabled) 1f else 0f,
         animationSpec = tween(500),
@@ -63,16 +71,16 @@ fun PlayerBackgroundLayers(
 
     val isOverlayVisible by remember {
         derivedStateOf {
-            state.isLyricsVisible || lyricsFractionProvider() > 0.5f
+            currentState.isLyricsVisible || currentLyricsProvider() > 0.5f
         }
     }
-    
+
     val isLayerOnScreen by remember {
-        derivedStateOf { expansionFractionProvider() > 0.005f }
+        derivedStateOf { currentExpansionProvider() > 0.005f }
     }
     val needsBlur by remember {
         derivedStateOf {
-            (state.isBlurBackgroundEnabled || blurOverlayAlpha > 0.005f) && isLayerOnScreen
+            (currentState.isBlurBackgroundEnabled || blurOverlayAlpha > 0.005f) && isLayerOnScreen
         }
     }
     val immersiveTransitionAlpha by animateFloatAsState(
@@ -82,6 +90,7 @@ fun PlayerBackgroundLayers(
     )
 
     val targetUrl = state.coverUrl.trim().takeIf(String::isNotBlank)
+
 
     key(state.trackUrl) {
         PlayerPaletteExtractor(
@@ -118,7 +127,7 @@ fun PlayerBackgroundLayers(
             }
     ) {
         val shouldRenderHeavyBackground by remember {
-            derivedStateOf { expansionFractionProvider() > 0.05f }
+            derivedStateOf { currentExpansionProvider() > 0.05f }
         }
 
         if (!shouldRenderHeavyBackground) {
@@ -173,15 +182,15 @@ fun PlayerBackgroundLayers(
 
         val isCanvasActive by remember {
             derivedStateOf {
-                canvasState.isCanvasEnabled &&
-                        canvasState.artwork != null &&
-                        expansionFractionProvider() > 0.05f
+                currentCanvasState.isCanvasEnabled &&
+                        currentCanvasState.artwork != null &&
+                        currentExpansionProvider() > 0.05f
             }
         }
 
         val queueArtworkFade by remember {
             derivedStateOf {
-                (1f - (queueFractionProvider() - 0.45f) / (0.85f - 0.45f)).coerceIn(0f, 1f)
+                (1f - (currentQueueProvider() - 0.45f) / (0.85f - 0.45f)).coerceIn(0f, 1f)
             }
         }
 

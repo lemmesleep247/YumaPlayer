@@ -438,7 +438,7 @@ private fun ExoPlayer.setCanvasPlayback(
     isPlaying: Boolean,
     isStarted: Boolean = true,
 ) {
-    if (isPlaying) {
+    if (isPlaying && isStarted) {
         if (playbackState == Player.STATE_ENDED) seekTo(0)
         if (playbackState == Player.STATE_IDLE && mediaItemCount > 0) prepare()
         play()

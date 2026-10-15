@@ -120,13 +120,16 @@ fun YumaApp(
         defaultValue = false,
     )
 
-    val effectiveHomeBackgroundStyle =
+    val randomStartupStyle =
         remember(randomHomeBackgroundOnStartup) {
-            if (randomHomeBackgroundOnStartup) {
-                HomeBackgroundStyle.entries.random()
-            } else {
-                homeBackgroundStyle
-            }
+            HomeBackgroundStyle.entries.random()
+        }
+
+    val effectiveHomeBackgroundStyle =
+        if (randomHomeBackgroundOnStartup) {
+            randomStartupStyle
+        } else {
+            homeBackgroundStyle
         }
 
     val homeBackgroundParallaxEnabled by
