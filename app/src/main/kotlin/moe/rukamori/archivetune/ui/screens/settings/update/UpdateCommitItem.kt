@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -82,6 +83,7 @@ internal fun CommitItem(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(3.dp),
             ) {
+                val displayAuthor = commit.author.ifBlank { stringResource(R.string.unknown) }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -102,9 +104,9 @@ internal fun CommitItem(
                     Text(
                         text =
                             if (commit.date.isNotEmpty()) {
-                                "${commit.author} • ${formatCommitDate(commit.date)}"
+                                "$displayAuthor • ${formatCommitDate(commit.date)}"
                             } else {
-                                commit.author
+                                displayAuthor
                             },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

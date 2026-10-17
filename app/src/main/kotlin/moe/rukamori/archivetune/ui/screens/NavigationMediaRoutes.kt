@@ -201,10 +201,23 @@ internal fun buildYouTubeBrowseRoute(
     params: String? = null,
 ): String {
     val encodedBrowseId = encodeNavigationParam(browseId)
-    val trimmedParams = params?.takeIf { it.isNotBlank() && it != "null" }
+    val trimmedParams = params?.takeIf { it.isNotBlank() }
     return if (trimmedParams != null) {
         "youtube_browse/$encodedBrowseId?params=${encodeNavigationParam(trimmedParams)}"
     } else {
         "youtube_browse/$encodedBrowseId"
+    }
+}
+
+internal fun buildBrowseRoute(
+    browseId: String,
+    params: String? = null,
+): String {
+    val encodedBrowseId = encodeNavigationParam(browseId)
+    val validParams = params?.takeIf { it.isNotBlank() }
+    return if (validParams != null) {
+        "browse/$encodedBrowseId?params=${encodeNavigationParam(validParams)}"
+    } else {
+        "browse/$encodedBrowseId"
     }
 }

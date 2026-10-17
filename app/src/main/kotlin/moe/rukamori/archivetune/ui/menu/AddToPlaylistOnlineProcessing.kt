@@ -23,8 +23,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import moe.rukamori.archivetune.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -200,21 +202,21 @@ internal fun AddToPlaylistOnlineResultDialog(
     onDismissResult: () -> Unit,
 ) {
     DefaultDialog(
-        title = { Text("Import Complete") },
+        title = { Text(stringResource(R.string.import_complete_title)) },
         onDismiss = onDismissResult,
         buttons = {
             TextButton(onClick = onDismissResult, shapes = ButtonDefaults.shapes()) {
-                Text("OK")
+                Text(stringResource(android.R.string.ok))
             }
         },
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Total Processed: ${summary.total}")
-            Text("Successfully Imported: ${summary.success}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.import_total_processed, summary.total))
+            Text(stringResource(R.string.import_success_count, summary.success), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             if (summary.failed > 0) {
-                Text("Failed: ${summary.failed}", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.import_failed_count, summary.failed), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                Text("Failed Items:", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.import_failed_items_title), style = MaterialTheme.typography.labelLarge)
                 LazyColumn(
                     modifier =
                         Modifier

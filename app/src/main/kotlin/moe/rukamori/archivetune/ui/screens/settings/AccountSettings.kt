@@ -174,8 +174,8 @@ import moe.rukamori.archivetune.utils.decodeSavedAccounts
 import moe.rukamori.archivetune.utils.encodeSavedAccounts
 import moe.rukamori.archivetune.utils.putLegacyPoToken
 import moe.rukamori.archivetune.utils.rememberPreference
-import moe.rukamori.archivetune.viewmodels.AccountChannelUiModel
-import moe.rukamori.archivetune.viewmodels.AccountChannelsState
+import moe.rukamori.archivetune.home.state.AccountChannelUiModel
+import moe.rukamori.archivetune.home.state.AccountChannelsState
 import moe.rukamori.archivetune.viewmodels.HomeViewModel
 import java.util.UUID
 import moe.rukamori.archivetune.ui.settings.SettingsAnimations

@@ -6,6 +6,7 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import android.webkit.MimeTypeMap
 import androidx.core.content.IntentCompat
+import moe.rukamori.archivetune.R
 import moe.rukamori.archivetune.models.ParsedIntentAction
 import moe.rukamori.archivetune.musicrecognition.ACTION_MUSIC_RECOGNITION
 import moe.rukamori.archivetune.aod.ACTION_AOD_MODE
@@ -151,6 +152,6 @@ object IntentParser {
         }.getOrNull()
         return displayName?.trim()?.takeIf { it.isNotBlank() }
             ?: uri.lastPathSegment?.substringAfterLast('/')?.substringBefore('?') ?.trim()?.takeIf { it.isNotBlank() }
-            ?: "Unknown"
+            ?: context.getString(R.string.unknown)
     }
 }

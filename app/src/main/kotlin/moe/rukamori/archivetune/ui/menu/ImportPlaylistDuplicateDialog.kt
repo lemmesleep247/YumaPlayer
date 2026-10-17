@@ -139,7 +139,7 @@ internal fun ImportPlaylistDuplicateDialog(
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
-                            onMessage(context.getString(R.string.import_failed) + ": ${e.message ?: "Unknown error"}")
+                            onMessage(context.getString(R.string.import_failed) + ": ${e.message ?: context.getString(R.string.error_unknown)}")
                             withContext(Dispatchers.Main) {
                                 onReset()
                                 onDismiss()
@@ -188,7 +188,7 @@ internal fun ImportPlaylistDuplicateDialog(
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
-                            onMessage(context.getString(R.string.import_failed) + ": ${e.message ?: "Unknown error"}")
+                            onMessage(context.getString(R.string.import_failed) + ": ${e.message ?: context.getString(R.string.error_unknown)}")
                             withContext(Dispatchers.Main) {
                                 onReset()
                                 onDismiss()

@@ -122,11 +122,16 @@ fun NavGraphBuilder.navigationBuilder(
         ChartsScreen(navController)
     }
     composable(
-        route = "browse/{browseId}",
+        route = "browse/{browseId}?params={params}",
         arguments =
             listOf(
                 navArgument("browseId") {
                     type = NavType.StringType
+                },
+                navArgument("params") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
                 },
             ),
     ) {

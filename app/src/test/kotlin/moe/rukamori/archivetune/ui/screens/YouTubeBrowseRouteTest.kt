@@ -15,9 +15,9 @@ class YouTubeBrowseRouteTest {
     }
 
     @Test
-    fun buildYouTubeBrowseRoute_literalNullStringParams_omitsQuery() {
+    fun buildYouTubeBrowseRoute_literalNullStringParams_preservesValue() {
         val route = buildYouTubeBrowseRoute("FEmusic_charts", "null")
-        assertEquals("youtube_browse/FEmusic_charts", route)
+        assertEquals("youtube_browse/FEmusic_charts?params=null", route)
     }
 
     @Test

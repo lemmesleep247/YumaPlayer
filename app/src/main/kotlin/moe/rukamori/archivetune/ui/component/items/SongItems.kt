@@ -371,7 +371,7 @@ fun YouTubeGridItem(
     badges = badges,
     thumbnailContent = {
         val database = LocalDatabase.current
-        val playerConnection = LocalPlayerConnection.current ?: return@GridItem
+        val playerConnection = LocalPlayerConnection.current
         val shape = if (item is ArtistItem) CircleShape else RoundedCornerShape(GridThumbnailCornerRadius)
 
         ItemThumbnail(
@@ -389,7 +389,7 @@ fun YouTubeGridItem(
         }
 
         AlbumPlayButton(
-            visible = item is AlbumItem && !isActive,
+            visible = playerConnection != null && item is AlbumItem && !isActive,
             onClick = {
                 coroutineScope?.launch(Dispatchers.IO) {
                     var albumWithSongs = database.albumWithSongs(item.id).first()
@@ -403,7 +403,7 @@ fun YouTubeGridItem(
                     }
                     albumWithSongs?.let {
                         withContext(Dispatchers.Main) {
-                            playerConnection.playQueue(LocalAlbumRadio(it))
+                            playerConnection?.playQueue(LocalAlbumRadio(it))
                         }
                     }
                 }

@@ -724,6 +724,13 @@ fun CachePlaylistScreen(
                 // Song items
                 itemsIndexed(filteredSongs, key = { index, song -> "${song.item.id}_$index" }) { index, songWrapper ->
                     val cachedSong = songWrapper.item
+                    val partiallyLabel = stringResource(R.string.partially_cached)
+                    val cacheStatusText =
+                        if (cachedSong.isFullyCached) {
+                            "${cachedSong.source} • ${cachedSong.formattedSize}"
+                        } else {
+                            "${cachedSong.source} • $partiallyLabel • ${cachedSong.formattedSize}"
+                        }
                     SongListItem(
                         song = cachedSong.song,
                         isActive = cachedSong.id == mediaMetadata?.id,
@@ -731,7 +738,7 @@ fun CachePlaylistScreen(
                         isSelected = songWrapper.isSelected && selection,
                         showInLibraryIcon = true,
                         isDownloaded = cachedSong.isFullyCached,
-                        viewCountText = cachedSong.statusText,
+                        viewCountText = cacheStatusText,
                         trailingContent = {
                             androidx.compose.material3.IconButton(onClick = {
                                 menuState.show {

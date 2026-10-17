@@ -40,6 +40,7 @@ import moe.rukamori.archivetune.db.entities.FormatEntity
 import moe.rukamori.archivetune.db.entities.SongEntity
 import moe.rukamori.archivetune.di.DownloadCache
 import moe.rukamori.archivetune.di.PlayerCache
+import moe.rukamori.archivetune.R
 import moe.rukamori.archivetune.extensions.toEnum
 import moe.rukamori.archivetune.innertube.YouTube
 import moe.rukamori.archivetune.playback.formatIdForSource
@@ -306,7 +307,7 @@ class DownloadUtil
                             } else {
                                 SongEntity(
                                     id = mediaId,
-                                    title = playbackData.videoDetails?.title ?: "Unknown",
+                                    title = playbackData.videoDetails?.title ?: context.getString(R.string.unknown),
                                     duration = playbackData.videoDetails?.lengthSeconds?.toIntOrNull() ?: 0,
                                     thumbnailUrl =
                                         playbackData.videoDetails

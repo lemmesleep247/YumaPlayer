@@ -62,7 +62,10 @@ fun MoodAndGenresScreen(
                 bottom = bottomPadding,
             ),
     ) {
-        item(span = { GridItemSpan(maxLineSpan) }) {
+        item(
+            key = MOOD_GENRES_HEADER_KEY,
+            span = { GridItemSpan(maxLineSpan) },
+        ) {
             NavigationTitle(
                 title = stringResource(R.string.mood_and_genres),
                 modifier = Modifier.animateItem(),

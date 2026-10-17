@@ -10,10 +10,15 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import moe.rukamori.archivetune.R
 import moe.rukamori.archivetune.innertube.YouTube
-import moe.rukamori.archivetune.innertube.models.YTItem
 import moe.rukamori.archivetune.utils.reportException
 import javax.inject.Inject
 
@@ -23,26 +28,56 @@ class BrowseViewModel
     constructor(
         savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
-        private val browseId: String? = savedStateHandle.get<String>("browseId")
+        private val browseId: String? = savedStateHandle.get<String>("browseId")?.takeIf { it.isNotBlank() }
+        private val params: String? = savedStateHandle.get<String>("params")?.takeIf { it.isNotBlank() }
 
-        val items = MutableStateFlow<List<YTItem>?>(emptyList())
-        val title = MutableStateFlow<String?>("")
+        private val _uiState = MutableStateFlow<YouTubeBrowseUiState>(YouTubeBrowseUiState.Loading)
+        val uiState: StateFlow<YouTubeBrowseUiState> = _uiState.asStateFlow()
+
+        private var loadJob: Job? = null
 
         init {
-            viewModelScope.launch {
-                browseId?.let {
-                    YouTube
-                        .browse(browseId, null)
-                        .onSuccess { result ->
-                            // Store the title
-                            title.value = result.title
+            load()
+        }
 
-                            // Flatten the nested structure to get all YTItems
-                            val allItems = result.items.flatMap { it.items }
-                            items.value = allItems
-                        }.onFailure {
-                            reportException(it)
+        fun retry() {
+            load()
+        }
+
+        private fun load() {
+            loadJob?.cancel()
+            val id = browseId
+            if (id == null) {
+                _uiState.value = YouTubeBrowseUiState.Error(R.string.error_unknown)
+                return
+            }
+
+            _uiState.value = YouTubeBrowseUiState.Loading
+
+            loadJob = viewModelScope.launch {
+                try {
+                    YouTube
+                        .browse(id, params)
+                        .onSuccess { rawResult ->
+                            ensureActive()
+                            _uiState.value =
+                                if (rawResult.items.any { it.items.isNotEmpty() }) {
+                                    YouTubeBrowseUiState.Success(rawResult)
+                                } else {
+                                    YouTubeBrowseUiState.Empty
+                                }
                         }
+                        .onFailure { throwable ->
+                            if (throwable is CancellationException) throw throwable
+                            ensureActive()
+                            reportException(throwable)
+                            _uiState.value = YouTubeBrowseUiState.Error(R.string.error_unknown)
+                        }
+                } catch (throwable: Throwable) {
+                    if (throwable is CancellationException) throw throwable
+                    ensureActive()
+                    reportException(throwable)
+                    _uiState.value = YouTubeBrowseUiState.Error(R.string.error_unknown)
                 }
             }
         }

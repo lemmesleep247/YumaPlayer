@@ -83,6 +83,7 @@ fun LazyListScope.artistLibrarySections(
             key = { index, item -> "local_song_${item.id}_$index" },
             contentType = { _, _ -> CONTENT_TYPE_SONG },
         ) { index, song ->
+            val unknownArtistLabel = stringResource(R.string.unknown_artist)
             SongListItem(
                 song = song,
                 showInLibraryIcon = true,
@@ -117,7 +118,7 @@ fun LazyListScope.artistLibrarySections(
                                 } else {
                                     playerConnection.playQueue(
                                         ListQueue(
-                                            title = libraryArtist?.artist?.name ?: "Unknown Artist",
+                                            title = libraryArtist?.artist?.name ?: unknownArtistLabel,
                                             items = librarySongs.map { it.toMediaItem() },
                                             startIndex = index,
                                         ),

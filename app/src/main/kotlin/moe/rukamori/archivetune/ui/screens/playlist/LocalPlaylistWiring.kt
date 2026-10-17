@@ -668,6 +668,7 @@ fun rememberLocalPlaylistActions(
                             database = database,
                             playlistId = p.id,
                             maxMixSize = 50,
+                            queueTitle = context.getString(R.string.queue_mix_from_playlist),
                         ),
                     )
                 }

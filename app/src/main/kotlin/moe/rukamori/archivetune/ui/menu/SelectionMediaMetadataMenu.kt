@@ -164,7 +164,7 @@ fun SelectionMediaMetadataMenu(
                     onDismiss()
                     playerConnection.playQueue(
                         ListQueue(
-                            title = "Selection",
+                            title = context.getString(R.string.selection_title),
                             items = songSelection.map { it.toMediaItem() },
                         ),
                     )
@@ -174,7 +174,7 @@ fun SelectionMediaMetadataMenu(
                     onDismiss()
                     playerConnection.playQueue(
                         ListQueue(
-                            title = "Selection",
+                            title = context.getString(R.string.selection_title),
                             items = songSelection.shuffled().map { it.toMediaItem() },
                         ),
                     )

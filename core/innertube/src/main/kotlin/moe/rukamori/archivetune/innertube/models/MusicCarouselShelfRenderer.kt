@@ -32,6 +32,7 @@ data class MusicCarouselShelfRenderer(
     data class Content(
         val musicTwoRowItemRenderer: MusicTwoRowItemRenderer?,
         val musicResponsiveListItemRenderer: MusicResponsiveListItemRenderer?,
+        val musicCardShelfRenderer: MusicCardShelfRenderer? = null,
         val musicNavigationButtonRenderer: MusicNavigationButtonRenderer?, // navigation button in explore tab
     )
 }

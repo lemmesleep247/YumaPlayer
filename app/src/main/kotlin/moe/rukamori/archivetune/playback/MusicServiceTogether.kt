@@ -271,7 +271,7 @@ internal fun MusicService.startTogetherOnlineHost(
             scope.launch(SilentHandler) {
                 togetherSessionState.value =
                     moe.rukamori.archivetune.together.TogetherSessionState.Error(
-                        message = "Connection failed: Invalid server websocket URL",
+                        message = getString(R.string.together_invalid_server_url),
                         recoverable = true,
                     )
             }
@@ -795,7 +795,7 @@ internal fun MusicService.joinTogetherOnline(
             scope.launch(SilentHandler) {
                 togetherSessionState.value =
                     moe.rukamori.archivetune.together.TogetherSessionState.Error(
-                        message = "Connection failed: Invalid server websocket URL",
+                        message = getString(R.string.together_invalid_server_url),
                         recoverable = true,
                     )
             }

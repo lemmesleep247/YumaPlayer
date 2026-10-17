@@ -97,6 +97,30 @@ internal fun LazyListScope.homeSimilarAndRemoteSections(
         }
     }
 
+    uiState.communitySection?.takeIf { it.featuredCards.isNotEmpty() }?.let { section ->
+        sectionSpacer("community")
+        item(
+            key = "home_community_header",
+            contentType = "section_header",
+        ) {
+            HomePageSectionTitle(
+                section = section,
+                navController = mediaContext.navController,
+                modifier = Modifier.animateItem(),
+            )
+        }
+        item(
+            key = "home_community",
+            contentType = "featured_playlist_shelf",
+        ) {
+            CommunityPlaylistSection(
+                section = section,
+                mediaContext = mediaContext,
+                modifier = Modifier.animateItem(),
+            )
+        }
+    }
+
     uiState.homePage?.sections.orEmpty().forEachIndexed { index, section ->
         val sectionKey = "${section.endpoint?.browseId ?: section.title}_$index"
         sectionSpacer("remote_$sectionKey")

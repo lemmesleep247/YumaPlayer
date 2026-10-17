@@ -150,7 +150,7 @@ fun ImportPlaylistDialog(
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        showMessage(context.getString(R.string.import_failed) + ": ${e.message ?: "Unknown error"}")
+                        showMessage(context.getString(R.string.import_failed) + ": ${e.message ?: context.getString(R.string.error_unknown)}")
                         withContext(Dispatchers.Main) {
                             resetState()
                             onDismiss()

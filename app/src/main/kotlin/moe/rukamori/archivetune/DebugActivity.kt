@@ -51,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -82,7 +83,7 @@ class DebugActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val stack = intent.getStringExtra(EXTRA_STACK_TRACE) ?: "No stack trace available"
-        val previewText = stack.lineSequence().firstOrNull()?.take(100) ?: "Unknown error"
+        val previewText = stack.lineSequence().firstOrNull()?.take(100) ?: getString(R.string.error_unknown)
         val timestampText =
             runCatching {
                 SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
@@ -204,7 +205,7 @@ private fun CrashReportScaffold(
                         contentDescription = null,
                     )
                 },
-                text = { Text("Share Logs") },
+                text = { Text(stringResource(R.string.debug_share_logs)) },
             )
         },
         topBar = {
@@ -364,7 +365,7 @@ private fun CrashReportScaffold(
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     shapes = ButtonDefaults.shapes(),
                 ) {
-                    Text("Restart")
+                    Text(stringResource(R.string.debug_restart))
                 }
                 Button(
                     onClick = onClose,
@@ -372,7 +373,7 @@ private fun CrashReportScaffold(
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                     shapes = ButtonDefaults.shapes(),
                 ) {
-                    Text("Close")
+                    Text(stringResource(R.string.debug_close))
                 }
             }
 

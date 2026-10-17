@@ -629,18 +629,22 @@ object BrowseClient {
                     ?.sectionListRenderer
             val sections =
                 sectionListRender
-                    ?.contents!!
-                    .mapNotNull { it.musicCarouselShelfRenderer }
-                    .mapNotNull {
-                        HomePage.Section.fromMusicCarouselShelfRenderer(it)
-                    }.toMutableList()
+                    ?.contents
+                    .orEmpty()
+                    .mapNotNull { it.toHomeSection() }
+                    .toMutableList()
             val chips =
-                sectionListRender.header
+                sectionListRender?.header
                     ?.chipCloudRenderer
                     ?.chips
                     ?.mapNotNull { HomePage.Chip.fromChipCloudChipRenderer(it) }
             HomePage(chips, sections, continuation)
         }
+
+    private fun SectionListRenderer.Content.toHomeSection(): HomePage.Section? =
+        musicCarouselShelfRenderer?.let { HomePage.Section.fromMusicCarouselShelfRenderer(it) }
+            ?: musicShelfRenderer?.let { HomePage.Section.fromMusicShelfRenderer(it) }
+            ?: musicCardShelfRenderer?.let { HomePage.Section.fromMusicCardShelfRenderer(it) }
 
     private suspend fun homeContinuation(continuation: String): Result<HomePage> =
         runCatching {
@@ -650,10 +654,8 @@ object BrowseClient {
                 response.continuationContents
                     ?.sectionListContinuation
                     ?.contents
-                    ?.mapNotNull { it.musicCarouselShelfRenderer }
-                    ?.mapNotNull {
-                        HomePage.Section.fromMusicCarouselShelfRenderer(it)
-                    }.orEmpty()
+                    .orEmpty()
+                    .mapNotNull { it.toHomeSection() }
             val nextContinuation =
                 if (sections.isEmpty()) {
                     null

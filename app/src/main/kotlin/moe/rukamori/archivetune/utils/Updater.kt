@@ -612,7 +612,7 @@ object Updater {
                         GitCommit(
                             sha = commitObj.optString("sha", "").take(7),
                             message = commit.optString("message", "").lines().firstOrNull() ?: "",
-                            author = authorObj?.optString("name", "Unknown") ?: "Unknown",
+                            author = authorObj?.optString("name", "")?.takeIf { it.isNotBlank() } ?: "",
                             date = authorObj?.optString("date", "") ?: "",
                             url = commitObj.optString("html_url", ""),
                             authorAvatarUrl = githubAuthorObj?.optString("avatar_url")?.takeIf { it.isNotBlank() },

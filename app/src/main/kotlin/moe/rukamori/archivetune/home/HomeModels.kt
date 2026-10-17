@@ -49,6 +49,7 @@ data class HomeUiState(
     val showTonalBackdrop: Boolean,
     val isRefreshing: Boolean,
     val isLoadingMore: Boolean,
+    val communitySection: HomePage.Section? = null,
 )
 
 sealed interface HomeAction {

@@ -73,6 +73,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
@@ -90,6 +91,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 import moe.rukamori.archivetune.constants.AppBarHeight
+import moe.rukamori.archivetune.designsystem.R
 import moe.rukamori.archivetune.ui.settings.SettingsDimensions
 import moe.rukamori.archivetune.ui.theme.glassStroke
 import kotlin.math.max
@@ -318,6 +320,8 @@ private fun SearchBarInputField(
 ) {
     val coercedQuery = remember(query) { query.coerceTextRanges() }
     val focused = interactionSource.collectIsFocusedAsState().value
+    val searchContentDescription = stringResource(R.string.content_desc_search)
+    val suggestionsAvailableDescription = stringResource(R.string.content_desc_suggestions_available)
     val textColor =
         LocalTextStyle.current.color.takeOrElse {
             if (focused) colors.focusedTextColor else colors.unfocusedTextColor
@@ -359,9 +363,9 @@ private fun SearchBarInputField(
                             }
                         }
                     }.semantics {
-                        contentDescription = "Search"
+                        contentDescription = searchContentDescription
                         if (active) {
-                            stateDescription = "Suggestions available"
+                            stateDescription = suggestionsAvailableDescription
                         }
                     }.onKeyEvent {
                         if (it.key == Key.Enter) {

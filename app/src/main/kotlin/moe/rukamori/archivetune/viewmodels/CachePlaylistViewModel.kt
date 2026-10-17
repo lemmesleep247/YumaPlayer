@@ -64,13 +64,6 @@ data class CachedSong(
     val thumbnailUrl get() = song.song.thumbnailUrl
 
     fun toMediaItem() = song.toMediaItem()
-
-    val statusText: String
-        get() = if (isFullyCached) {
-            "$source • $formattedSize"
-        } else {
-            "$source • Частично • $formattedSize"
-        }
 }
 
 internal data class CacheRange(val start: Long, val end: Long)

@@ -20,6 +20,10 @@
     </plurals>
     <string name="history">History</string>
     <string name="stats">Stats</string>
+    <string name="stats_axis_12am">12AM</string>
+    <string name="stats_axis_6am">6AM</string>
+    <string name="stats_axis_12pm">12PM</string>
+    <string name="stats_axis_6pm">6PM</string>
     <string name="mood_and_genres">Mood &amp; Genres</string>
     <string name="account">Account</string>
     <string name="quick_picks">Quick picks</string>
@@ -48,6 +52,14 @@
     <string name="filter_artists">Artists</string>
     <string name="filter_playlists">Playlists</string>
     <string name="filter_community_playlists">Community playlists</string>
+    <string-array name="community_label_markers">
+        <item>сообществ</item>
+        <item>спільнот</item>
+    </string-array>
+    <string-array name="user_playlist_markers">
+        <item>пользовател</item>
+        <item>користувач</item>
+    </string-array>
     <string name="filter_featured_playlists">Featured playlists</string>
     <string name="no_results_found">No results found</string>
     <string name="top_results">Top Results</string>
@@ -180,8 +192,14 @@
     <string name="flac_download_saved">Saved: %1$s</string>
     <string name="flac_download_deleted">Deleted: %1$s</string>
     <string name="download_progress_percent">%1$d%%</string>
+    <string name="partially_cached">Partially</string>
     <string name="import_playlist">Import playlist</string>
     <string name="import_failed">Import failed</string>
+    <string name="import_complete_title">Import Complete</string>
+    <string name="import_total_processed">Total Processed: %1$d</string>
+    <string name="import_success_count">Successfully Imported: %1$d</string>
+    <string name="import_failed_count">Failed: %1$d</string>
+    <string name="import_failed_items_title">Failed Items:</string>
     <string name="update_button">Update</string>
     <string name="add">Add</string>
     <string name="add_to_playlist">Add to playlist</string>
@@ -332,6 +350,8 @@
     <string name="queue_searched_songs">Searched songs</string>
     <string name="queue_continue_playing">Continue Playing</string>
     <string name="queue_autoplaying_similar">Autoplaying similar music</string>
+    <string name="queue_mix_from_playlist">Mix from Playlist</string>
+    <string name="selection_title">Selection</string>
     <string name="music_player">Music Player</string>
     <string name="settings">Settings</string>
     <string name="appearance">Appearance</string>
@@ -852,6 +872,9 @@
     <string name="last_start">Last Start</string>
     <string name="last_end">Last End</string>
     <string name="debug_logs">Debug Logs</string>
+    <string name="debug_share_logs">Share Logs</string>
+    <string name="debug_restart">Restart</string>
+    <string name="debug_close">Close</string>
     <string name="log_level_verbose">Verbose</string>
     <string name="log_level_debug">Debug</string>
     <string name="log_level_info">Info</string>
@@ -998,6 +1021,7 @@
     <string name="together_online_not_configured">Online sessions aren\'t configured</string>
     <string name="together_token_missing">Online sessions aren\'t available in this build</string>
     <string name="together_server_unreachable">Server unreachable</string>
+    <string name="together_invalid_server_url">Connection failed: Invalid server websocket URL</string>
     <string name="together_connection_timed_out">Connection timed out</string>
     <string name="together_session_not_found">Session not found</string>
     <string name="together_server_error">Server error, please try again later</string>

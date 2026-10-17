@@ -78,7 +78,7 @@ internal fun SelectionSongMenuContent(
                     onDismiss()
                     playerConnection.playQueue(
                         ListQueue(
-                            title = "Selection",
+                            title = context.getString(R.string.selection_title),
                             items = songSelection.map { it.toMediaItem() },
                         ),
                     )
@@ -88,7 +88,7 @@ internal fun SelectionSongMenuContent(
                     onDismiss()
                     playerConnection.playQueue(
                         ListQueue(
-                            title = "Selection",
+                            title = context.getString(R.string.selection_title),
                             items = songSelection.shuffled().map { it.toMediaItem() },
                         ),
                     )

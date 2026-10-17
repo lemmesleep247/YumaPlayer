@@ -20,6 +20,7 @@ class LocalMixQueue(
     private val database: MusicDatabase,
     private val playlistId: String,
     private val maxMixSize: Int = 500,
+    private val queueTitle: String,
 ) : Queue {
     override val preloadItem: MediaMetadata? = null
 
@@ -37,7 +38,7 @@ class LocalMixQueue(
 
             if (finalMix.isNotEmpty()) {
                 return@withContext Queue.Status(
-                    title = "Mix from Playlist",
+                    title = queueTitle,
                     items = finalMix.map { it.toMediaItem() },
                     mediaItemIndex = 0,
                 )
@@ -45,7 +46,7 @@ class LocalMixQueue(
 
             val seedSongId =
                 playlistSongIds.firstOrNull()
-                    ?: return@withContext Queue.Status(title = "Mix from Playlist", items = emptyList(), mediaItemIndex = 0)
+                    ?: return@withContext Queue.Status(title = queueTitle, items = emptyList(), mediaItemIndex = 0)
 
             val nextResult = YouTube.next(WatchEndpoint(videoId = seedSongId)).getOrNull()
             val fromNext =
@@ -73,7 +74,7 @@ class LocalMixQueue(
                     .take(maxMixSize)
 
             Queue.Status(
-                title = "Mix from Playlist",
+                title = queueTitle,
                 items = onlineMix,
                 mediaItemIndex = 0,
             )

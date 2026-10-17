@@ -122,8 +122,8 @@ import moe.rukamori.archivetune.ui.theme.yumaClickable
 import moe.rukamori.archivetune.ui.theme.yumaGlassCard
 import moe.rukamori.archivetune.utils.SavedAccount
 import moe.rukamori.archivetune.utils.SavedAccountCollection
-import moe.rukamori.archivetune.viewmodels.AccountChannelUiModel
-import moe.rukamori.archivetune.viewmodels.AccountChannelsState
+import moe.rukamori.archivetune.home.state.AccountChannelUiModel
+import moe.rukamori.archivetune.home.state.AccountChannelsState
 
 private val CardShape = RoundedCornerShape(28.dp)
 private val RowIconSize = 42.dp

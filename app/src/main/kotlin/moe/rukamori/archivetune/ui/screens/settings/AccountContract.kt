@@ -25,8 +25,8 @@ import moe.rukamori.archivetune.constants.YtmSyncKey
 import moe.rukamori.archivetune.spotify.SpotifyAccountUiState
 import moe.rukamori.archivetune.utils.SavedAccount
 import moe.rukamori.archivetune.utils.SavedAccountCollection
-import moe.rukamori.archivetune.viewmodels.AccountChannelUiModel
-import moe.rukamori.archivetune.viewmodels.AccountChannelsState
+import moe.rukamori.archivetune.home.state.AccountChannelUiModel
+import moe.rukamori.archivetune.home.state.AccountChannelsState
 
 internal object AccountContract {
     val NameKey = AccountNameKey
