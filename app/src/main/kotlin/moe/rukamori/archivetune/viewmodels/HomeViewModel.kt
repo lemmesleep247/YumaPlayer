@@ -17,6 +17,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import timber.log.Timber
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -355,8 +356,14 @@ class HomeViewModel
         }
 
         private fun toggleChip(chip: HomePage.Chip?) {
+            Timber.tag("HomeDebug").d(
+                "toggleChip clicked: title=%s, hasParams=%b",
+                chip?.title,
+                !chip?.endpoint?.params.isNullOrBlank(),
+            )
             chipLoadJob?.cancel()
             if (chip == null || chip == selectedChip.value && previousHomePage.value != null) {
+                Timber.tag("HomeDebug").d("toggleChip deselected, restoring previous homePage")
                 homePage.value = previousHomePage.value
                 updateCommunitySection(previousCommunitySection.value)
                 previousHomePage.value = null
@@ -375,6 +382,19 @@ class HomeViewModel
                 viewModelScope.launch(Dispatchers.IO) {
                     feedCoordinator.loadHome(chipParams = chip.endpoint?.params)
                         .onSuccess { nextSections ->
+                            Timber.tag("HomeDebug").d(
+                                "toggleChip SUCCESS: loaded %d sections: %s",
+                                nextSections.sections.size,
+                                nextSections.sections.map { it.title },
+                            )
+                            if (nextSections.sections.isEmpty()) {
+                                Timber.tag("HomeDebug").w("toggleChip returned empty sections, ignoring")
+                                if (selectedChip.value == null) {
+                                    previousHomePage.value = null
+                                    previousCommunitySection.value = null
+                                }
+                                return@onSuccess
+                            }
                             selectedChip.value = chip
                             val filteredPage = nextSections.copy(chips = homePage.value?.chips)
                             val prepared = prepareCommunityHomePage(filteredPage, allowStructuralFallback = false)
@@ -382,7 +402,12 @@ class HomeViewModel
                             updateCommunitySection(prepared.communitySection)
                             updateAllYtItems()
                         }.onFailure {
+                            Timber.tag("HomeDebug").e(it, "toggleChip FAILED")
                             reportException(it)
+                            if (selectedChip.value == null) {
+                                previousHomePage.value = null
+                                previousCommunitySection.value = null
+                            }
                         }
                 }
         }

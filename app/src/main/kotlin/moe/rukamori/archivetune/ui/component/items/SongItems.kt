@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.media3.exoplayer.offline.Download
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -153,6 +154,7 @@ fun SongGridItem(
     isActive: Boolean = false,
     isPlaying: Boolean = false,
     fillMaxWidth: Boolean = false,
+    thumbnailHeight: Dp = GridThumbnailHeight,
 ) = GridItem(
     title = {
         MarqueeText(
@@ -181,7 +183,7 @@ fun SongGridItem(
             isActive = isActive,
             isPlaying = isPlaying,
             shape = RoundedCornerShape(GridThumbnailCornerRadius),
-            modifier = Modifier.size(GridThumbnailHeight),
+            modifier = Modifier.size(thumbnailHeight),
         )
         if (!isActive) {
             OverlayPlayButton(
@@ -190,6 +192,7 @@ fun SongGridItem(
         }
     },
     fillMaxWidth = fillMaxWidth,
+    thumbnailHeight = thumbnailHeight,
     modifier = modifier,
 )
 
@@ -342,6 +345,7 @@ fun YouTubeGridItem(
     isActive: Boolean = false,
     isPlaying: Boolean = false,
     fillMaxWidth: Boolean = false,
+    thumbnailHeight: Dp = GridThumbnailHeight,
 ) = GridItem(
     title = {
         MarqueeText(
@@ -412,5 +416,6 @@ fun YouTubeGridItem(
     },
     thumbnailRatio = thumbnailRatio,
     fillMaxWidth = fillMaxWidth,
+    thumbnailHeight = thumbnailHeight,
     modifier = modifier,
 )

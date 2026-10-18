@@ -22,6 +22,7 @@ import moe.rukamori.archivetune.innertube.models.filterVideo
 import moe.rukamori.archivetune.innertube.pages.HomePage
 import moe.rukamori.archivetune.utils.dataStore
 import moe.rukamori.archivetune.utils.get
+import timber.log.Timber
 import javax.inject.Inject
 
 class HomeFeedCoordinator
@@ -41,7 +42,16 @@ class HomeFeedCoordinator
                         YouTube.home()
                     }
                 result.map { page ->
-                    filterHomePageSections(page, filterChips = true)
+                    val filtered = filterHomePageSections(page, filterChips = true)
+                    Timber.tag("HomeDebug").d(
+                        "loadHome(params=%s): sections=%s, chips=%s",
+                        chipParams,
+                        filtered.sections.map { it.title },
+                        filtered.chips?.map { "${it.title}(hasParams=${!it.endpoint?.params.isNullOrBlank()})" },
+                    )
+                    filtered
+                }.onFailure {
+                    Timber.tag("HomeDebug").e(it, "loadHome(params=%s) FAILED", chipParams)
                 }
             }
 

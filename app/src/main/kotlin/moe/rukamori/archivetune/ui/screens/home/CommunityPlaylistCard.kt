@@ -66,6 +66,15 @@ import moe.rukamori.archivetune.ui.menu.YouTubeSongMenu
 import moe.rukamori.archivetune.ui.theme.TestThemeWrapper
 import moe.rukamori.archivetune.ui.theme.ThemePreviews
 
+// --- Community / Featured Card Geometry ---
+private const val CommunityCardWidthRatio = 0.88f
+private val CommunityCoverSize = 80.dp
+private val CommunityCoverCornerRadius = 12.dp
+private val CommunityActionButtonSize = 40.dp
+private val CommunityActionIconSize = 20.dp
+private val CommunityShelfSpacing = 12.dp
+private val CommunityShelfHorizontalPadding = 16.dp
+
 @Composable
 internal fun CommunityPlaylistSection(
     section: HomePage.Section,
@@ -79,14 +88,14 @@ internal fun CommunityPlaylistSection(
     }
     val horizontalInsets = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal).asPaddingValues()
     val layoutDirection = LocalLayoutDirection.current
-    val startPadding = horizontalInsets.calculateStartPadding(layoutDirection) + 16.dp
-    val endPadding = horizontalInsets.calculateEndPadding(layoutDirection) + 16.dp
+    val startPadding = horizontalInsets.calculateStartPadding(layoutDirection) + CommunityShelfHorizontalPadding
+    val endPadding = horizontalInsets.calculateEndPadding(layoutDirection) + CommunityShelfHorizontalPadding
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        val cardWidth = (maxWidth - 40.dp).coerceAtLeast(264.dp).coerceAtMost(520.dp)
+        val cardWidth = (maxWidth - (CommunityShelfHorizontalPadding * 2)) * CommunityCardWidthRatio
         LazyRow(
             contentPadding = PaddingValues(start = startPadding, end = endPadding),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(CommunityShelfSpacing),
         ) {
             items(
                 items = section.featuredCards,
@@ -207,6 +216,15 @@ internal fun CommunityPlaylistCard(
                         isActive = song.id == activeSongId,
                         isPlaying = isPlaying,
                         isSwipeable = false,
+                        trailingContent = {
+                            androidx.compose.material3.IconButton(onClick = { onSongMenu(song) }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.more_vert),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .combinedClickable(
@@ -251,11 +269,11 @@ private fun CommunityPlaylistCardHeader(
     }
 
     Row(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 96.dp)
+            .heightIn(min = CommunityCoverSize)
             .then(
                 Modifier.combinedClickable(
                     onClick = onOpen,
@@ -265,16 +283,16 @@ private fun CommunityPlaylistCardHeader(
     ) {
         PlaylistThumbnail(
             thumbnails = coverThumbnails,
-            size = 96.dp,
+            size = CommunityCoverSize,
             placeHolder = {
                 Icon(
                     painter = painterResource(R.drawable.queue_music),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.size(32.dp),
                 )
             },
-            shape = MaterialTheme.shapes.medium,
+            shape = RoundedCornerShape(CommunityCoverCornerRadius),
         )
 
         Column(
@@ -362,33 +380,36 @@ private fun CommunityPlaylistCardActionsRow(
     ) {
         FilledIconButton(
             onClick = onPlay,
-            modifier = Modifier.size(56.dp),
+            modifier = Modifier.size(CommunityActionButtonSize),
         ) {
             Icon(
                 painter = painterResource(R.drawable.play),
                 contentDescription = stringResource(R.string.play),
+                modifier = Modifier.size(CommunityActionIconSize),
             )
         }
 
         if (onSecondaryPlay != null) {
             FilledTonalIconButton(
                 onClick = onSecondaryPlay,
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(CommunityActionButtonSize),
             ) {
                 Icon(
                     painter = painterResource(if (isSecondaryRadio) R.drawable.radio else R.drawable.shuffle),
                     contentDescription = stringResource(if (isSecondaryRadio) R.string.start_radio else R.string.shuffle),
+                    modifier = Modifier.size(CommunityActionIconSize),
                 )
             }
         }
 
         FilledTonalIconButton(
             onClick = onMore,
-            modifier = Modifier.size(56.dp),
+            modifier = Modifier.size(CommunityActionButtonSize),
         ) {
             Icon(
                 painter = painterResource(R.drawable.more_horiz),
                 contentDescription = stringResource(R.string.more_label),
+                modifier = Modifier.size(CommunityActionIconSize),
             )
         }
     }

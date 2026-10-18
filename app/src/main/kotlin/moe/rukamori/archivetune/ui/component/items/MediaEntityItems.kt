@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.media3.exoplayer.offline.Download
 import androidx.media3.exoplayer.offline.Download.STATE_COMPLETED
 import androidx.media3.exoplayer.offline.Download.STATE_DOWNLOADING
@@ -37,6 +38,7 @@ import moe.rukamori.archivetune.LocalDownloadUtil
 import moe.rukamori.archivetune.LocalPlayerConnection
 import moe.rukamori.archivetune.R
 import moe.rukamori.archivetune.constants.GridThumbnailCornerRadius
+import moe.rukamori.archivetune.constants.GridThumbnailHeight
 import moe.rukamori.archivetune.constants.ListThumbnailSize
 import moe.rukamori.archivetune.constants.ThumbnailCornerRadius
 import moe.rukamori.archivetune.db.entities.Album
@@ -85,6 +87,7 @@ fun ArtistGridItem(
         }
     },
     fillMaxWidth: Boolean = false,
+    thumbnailHeight: Dp = GridThumbnailHeight,
 ) = GridItem(
     title = artist.artist.name,
     subtitle = pluralStringResource(R.plurals.n_song, artist.songCount, artist.songCount),
@@ -101,6 +104,7 @@ fun ArtistGridItem(
         )
     },
     fillMaxWidth = fillMaxWidth,
+    thumbnailHeight = thumbnailHeight,
     modifier = modifier,
 )
 
@@ -228,6 +232,7 @@ fun AlbumGridItem(
     isActive: Boolean = false,
     isPlaying: Boolean = false,
     fillMaxWidth: Boolean = false,
+    thumbnailHeight: Dp = GridThumbnailHeight,
 ) = GridItem(
     title = {
         MarqueeText(
@@ -269,6 +274,7 @@ fun AlbumGridItem(
         )
     },
     fillMaxWidth = fillMaxWidth,
+    thumbnailHeight = thumbnailHeight,
     modifier = modifier,
 )
 
@@ -281,6 +287,7 @@ fun LocalAlbumsGrid(
     isActive: Boolean = false,
     isPlaying: Boolean = false,
     fillMaxWidth: Boolean = false,
+    thumbnailHeight: Dp = GridThumbnailHeight,
     modifier: Modifier = Modifier,
 ) = GridItem(
     title = title,
@@ -298,6 +305,7 @@ fun LocalAlbumsGrid(
         )
     },
     fillMaxWidth = fillMaxWidth,
+    thumbnailHeight = thumbnailHeight,
     modifier = modifier,
 )
 
@@ -310,6 +318,7 @@ fun LocalArtistsGrid(
     isActive: Boolean = false,
     isPlaying: Boolean = false,
     fillMaxWidth: Boolean = false,
+    thumbnailHeight: Dp = GridThumbnailHeight,
     modifier: Modifier = Modifier,
 ) = GridItem(
     title = title,
@@ -327,5 +336,6 @@ fun LocalArtistsGrid(
         )
     },
     fillMaxWidth = fillMaxWidth,
+    thumbnailHeight = thumbnailHeight,
     modifier = modifier,
 )

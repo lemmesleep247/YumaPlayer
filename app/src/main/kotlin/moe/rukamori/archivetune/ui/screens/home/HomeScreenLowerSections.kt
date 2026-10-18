@@ -64,7 +64,40 @@ internal data class HomeFeedMediaContext(
     ExperimentalFoundationApi::class,
     ExperimentalMaterial3ExpressiveApi::class,
 )
-internal fun LazyListScope.homeSimilarAndRemoteSections(
+internal fun LazyListScope.homeCommunitySection(
+    uiState: HomeUiState,
+    mediaContext: HomeFeedMediaContext,
+) {
+    uiState.communitySection?.takeIf { it.featuredCards.isNotEmpty() }?.let { section ->
+        sectionSpacer("community")
+        item(
+            key = "home_community_header",
+            contentType = "section_header",
+        ) {
+            HomePageSectionTitle(
+                section = section,
+                navController = mediaContext.navController,
+                modifier = Modifier.animateItem(),
+            )
+        }
+        item(
+            key = "home_community",
+            contentType = "featured_playlist_shelf",
+        ) {
+            CommunityPlaylistSection(
+                section = section,
+                mediaContext = mediaContext,
+                modifier = Modifier.animateItem(),
+            )
+        }
+    }
+}
+
+@OptIn(
+    ExperimentalFoundationApi::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+)
+internal fun LazyListScope.homeSimilarRecommendationsSection(
     uiState: HomeUiState,
     mediaContext: HomeFeedMediaContext,
 ) {
@@ -96,31 +129,16 @@ internal fun LazyListScope.homeSimilarAndRemoteSections(
             )
         }
     }
+}
 
-    uiState.communitySection?.takeIf { it.featuredCards.isNotEmpty() }?.let { section ->
-        sectionSpacer("community")
-        item(
-            key = "home_community_header",
-            contentType = "section_header",
-        ) {
-            HomePageSectionTitle(
-                section = section,
-                navController = mediaContext.navController,
-                modifier = Modifier.animateItem(),
-            )
-        }
-        item(
-            key = "home_community",
-            contentType = "featured_playlist_shelf",
-        ) {
-            CommunityPlaylistSection(
-                section = section,
-                mediaContext = mediaContext,
-                modifier = Modifier.animateItem(),
-            )
-        }
-    }
-
+@OptIn(
+    ExperimentalFoundationApi::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+)
+internal fun LazyListScope.homeRemoteSections(
+    uiState: HomeUiState,
+    mediaContext: HomeFeedMediaContext,
+) {
     uiState.homePage?.sections.orEmpty().forEachIndexed { index, section ->
         val sectionKey = "${section.endpoint?.browseId ?: section.title}_$index"
         sectionSpacer("remote_$sectionKey")
@@ -150,6 +168,19 @@ internal fun LazyListScope.homeSimilarAndRemoteSections(
             )
         }
     }
+}
+
+@OptIn(
+    ExperimentalFoundationApi::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+)
+internal fun LazyListScope.homeSimilarAndRemoteSections(
+    uiState: HomeUiState,
+    mediaContext: HomeFeedMediaContext,
+) {
+    homeSimilarRecommendationsSection(uiState, mediaContext)
+    homeCommunitySection(uiState, mediaContext)
+    homeRemoteSections(uiState, mediaContext)
 }
 
 internal fun LazyListScope.homeLoadingMoreItem(

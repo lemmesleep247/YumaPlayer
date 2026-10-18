@@ -11,6 +11,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.snapping.SnapLayoutInfoProvider
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
@@ -69,47 +70,53 @@ fun KeepListeningSection(
     scope: CoroutineScope,
     modifier: Modifier = Modifier,
 ) {
-    val rows = if (keepListening.size > 6) 2 else 1
-    val gridHeight =
-        (
-            GridThumbnailHeight +
-                with(LocalDensity.current) {
-                    MaterialTheme.typography.bodyLarge.lineHeight
-                        .toDp() * 2 +
-                        MaterialTheme.typography.bodyMedium.lineHeight
-                            .toDp() * 2
-                }
-        ) * rows
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val cardWidth = HomeLayoutConfig.cardWidth(maxWidth)
+        val artistSize = HomeLayoutConfig.artistSize(maxWidth)
+        val rows = if (keepListening.size > 6) 2 else 1
+        val gridHeight =
+            (
+                cardWidth +
+                    with(LocalDensity.current) {
+                        MaterialTheme.typography.bodyLarge.lineHeight
+                            .toDp() * 2 +
+                            MaterialTheme.typography.bodyMedium.lineHeight
+                                .toDp() * 2
+                    }
+            ) * rows
 
-    LazyHorizontalGrid(
-        state = rememberLazyGridState(),
-        rows = GridCells.Fixed(rows),
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .height(gridHeight),
-    ) {
-        items(
-            items = keepListening,
-            key = { item ->
-                when (item) {
-                    is Song -> "song_${item.id}"
-                    is Album -> "album_${item.id}"
-                    is Artist -> "artist_${item.id}"
-                    is Playlist -> "playlist_${item.id}"
-                }
-            },
-            contentType = { item -> item::class },
-        ) { item ->
-            LocalGridItem(
-                item = item,
-                mediaMetadata = mediaMetadata,
-                isPlaying = isPlaying,
-                navController = navController,
-                playerConnection = playerConnection,
-                menuState = menuState,
-                scope = scope,
-            )
+        LazyHorizontalGrid(
+            state = rememberLazyGridState(),
+            rows = GridCells.Fixed(rows),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(gridHeight),
+        ) {
+            items(
+                items = keepListening,
+                key = { item ->
+                    when (item) {
+                        is Song -> "song_${item.id}"
+                        is Album -> "album_${item.id}"
+                        is Artist -> "artist_${item.id}"
+                        is Playlist -> "playlist_${item.id}"
+                    }
+                },
+                contentType = { item -> item::class },
+            ) { item ->
+                LocalGridItem(
+                    item = item,
+                    mediaMetadata = mediaMetadata,
+                    isPlaying = isPlaying,
+                    navController = navController,
+                    playerConnection = playerConnection,
+                    menuState = menuState,
+                    scope = scope,
+                    cardWidth = cardWidth,
+                    artistSize = artistSize,
+                )
+            }
         }
     }
 }

@@ -1,5 +1,8 @@
 package moe.rukamori.archivetune.ui.scaffold
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -48,6 +51,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
+import kotlinx.coroutines.delay
 import moe.rukamori.archivetune.R
 import moe.rukamori.archivetune.constants.AppBarHeight
 import moe.rukamori.archivetune.ui.component.IconButton
@@ -124,14 +128,49 @@ fun ScaffoldTopAppBar(
                 (if (useRail) WindowInsetsSides.Right else WindowInsetsSides.Horizontal) + WindowInsetsSides.Top,
             ),
             title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(painterResource(R.drawable.about_appbar), null, Modifier.size(35.dp).padding(end = 3.dp))
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.about_appbar),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(35.dp)
+                            .padding(end = 6.dp),
                     )
+
+                    if (currentRoute == Screens.Home.route) {
+                        var showGreeting by remember { mutableStateOf(false) }
+
+                        LaunchedEffect(Unit) {
+                            while (true) {
+                                delay(6000)
+                                showGreeting = !showGreeting
+                            }
+                        }
+
+                        Crossfade(
+                            targetState = showGreeting,
+                            animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
+                            label = "HomeTitleCrossfade",
+                            modifier = Modifier.weight(1f, fill = false),
+                        ) { isGreeting ->
+                            Text(
+                                text = if (isGreeting) getGreetingText() else stringResource(R.string.app_name),
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = stringResource(R.string.app_name),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             },
             actions = {
@@ -177,5 +216,16 @@ fun ScaffoldTopAppBar(
                 navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             ),
         )
+    }
+}
+
+@Composable
+private fun getGreetingText(): String {
+    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    return when (hour) {
+        in 5..11 -> stringResource(R.string.good_morning)
+        in 12..17 -> stringResource(R.string.good_afternoon)
+        in 18..23 -> stringResource(R.string.good_evening)
+        else -> stringResource(R.string.good_night)
     }
 }

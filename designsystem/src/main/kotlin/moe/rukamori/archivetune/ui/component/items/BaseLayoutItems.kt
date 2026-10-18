@@ -31,12 +31,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import moe.rukamori.archivetune.constants.GridThumbnailHeight
 import moe.rukamori.archivetune.constants.ListItemHeight
 import moe.rukamori.archivetune.ui.theme.LocalYumaColors
 
+// --- Layout Parameters ---
 const val ActiveBoxAlpha = 0.6f
+
+private val GridItemHorizontalPadding = 4.dp
+private val GridItemVerticalPadding = 4.dp
+private val GridItemContentSpacing = 6.dp
+
+@PublishedApi internal val ListItemHorizontalPadding = 8.dp
+@PublishedApi internal val ListItemThumbnailPadding = 8.dp
+@PublishedApi internal val ListItemTextHorizontalPadding = 6.dp
+@PublishedApi internal val ListItemTextSpacing = 2.dp
+@PublishedApi internal val ListItemBadgeSpacing = 4.dp
+@PublishedApi internal val ActiveItemCornerRadius = 12.dp
+@PublishedApi internal const val ActiveGlassAlpha = 0.2f
 
 @Composable
 inline fun ListItem(
@@ -59,24 +73,24 @@ inline fun ListItem(
             modifier
                 .focusable()
                 .height(ListItemHeight)
-                .padding(horizontal = 8.dp)
+                .padding(horizontal = ListItemHorizontalPadding)
                 .then(
                     if (isActive) {
                         Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(yumaColors.glassBorder.copy(alpha = 0.2f))
+                            .clip(RoundedCornerShape(ActiveItemCornerRadius))
+                            .background(yumaColors.glassBorder.copy(alpha = ActiveGlassAlpha))
                     } else {
                         Modifier
                     },
                 ),
     ) {
-        Box(Modifier.padding(8.dp), contentAlignment = Alignment.Center) { thumbnailContent() }
+        Box(Modifier.padding(ListItemThumbnailPadding), contentAlignment = Alignment.Center) { thumbnailContent() }
         Column(
             modifier =
                 Modifier
                     .weight(1f)
-                    .padding(horizontal = 6.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+                    .padding(horizontal = ListItemTextHorizontalPadding),
+            verticalArrangement = Arrangement.spacedBy(ListItemTextSpacing),
         ) {
             MarqueeText(
                 text = title,
@@ -92,7 +106,7 @@ inline fun ListItem(
                 CompositionLocalProvider(LocalContentColor provides subtitleContentColor) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(ListItemBadgeSpacing),
                     ) { subtitle() }
                 }
             }
@@ -151,19 +165,20 @@ fun GridItem(
     thumbnailContent: @Composable BoxWithConstraintsScope.() -> Unit,
     thumbnailRatio: Float = 1f,
     fillMaxWidth: Boolean = false,
+    thumbnailHeight: Dp = GridThumbnailHeight,
 ) {
     Column(
         modifier =
             if (fillMaxWidth) {
                 modifier
                     .focusable()
-                    .padding(12.dp)
+                    .padding(horizontal = GridItemHorizontalPadding, vertical = GridItemVerticalPadding)
                     .fillMaxWidth()
             } else {
                 modifier
                     .focusable()
-                    .padding(12.dp)
-                    .width(GridThumbnailHeight * thumbnailRatio)
+                    .padding(horizontal = GridItemHorizontalPadding, vertical = GridItemVerticalPadding)
+                    .width(thumbnailHeight * thumbnailRatio)
             },
     ) {
         BoxWithConstraints(
@@ -172,13 +187,13 @@ fun GridItem(
                 if (fillMaxWidth) {
                     Modifier.fillMaxWidth()
                 } else {
-                    Modifier.height(GridThumbnailHeight)
+                    Modifier.height(thumbnailHeight)
                 }.aspectRatio(thumbnailRatio),
         ) {
             thumbnailContent()
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(GridItemContentSpacing))
 
         title()
 
@@ -199,6 +214,7 @@ fun GridItem(
     thumbnailContent: @Composable BoxWithConstraintsScope.() -> Unit,
     thumbnailRatio: Float = 1f,
     fillMaxWidth: Boolean = false,
+    thumbnailHeight: Dp = GridThumbnailHeight,
 ) = GridItem(
     modifier = modifier,
     title = {
@@ -219,7 +235,9 @@ fun GridItem(
             maxLines = 1,
         )
     },
+    badges = badges,
     thumbnailContent = thumbnailContent,
     thumbnailRatio = thumbnailRatio,
     fillMaxWidth = fillMaxWidth,
+    thumbnailHeight = thumbnailHeight,
 )

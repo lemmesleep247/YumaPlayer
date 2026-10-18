@@ -12,8 +12,10 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.navigation.NavController
 import kotlinx.coroutines.CoroutineScope
+import moe.rukamori.archivetune.constants.GridThumbnailHeight
 import moe.rukamori.archivetune.db.entities.Album
 import moe.rukamori.archivetune.db.entities.Artist
 import moe.rukamori.archivetune.db.entities.LocalItem
@@ -58,14 +60,23 @@ internal fun YouTubeGridItemWrapper(
     visibleItems: List<YTItem>? = null,
     clickedIndex: Int = -1,
     sectionTitle: String? = null,
+    cardWidth: Dp = GridThumbnailHeight,
+    artistSize: Dp = GridThumbnailHeight,
 ) {
     val haptics = rememberYumaHaptics()
+    val thumbnailHeight =
+        when (item) {
+            is ArtistItem -> artistSize
+            else -> cardWidth
+        }
+
     YouTubeGridItem(
         item = item,
         isActive = item.id in listOf(mediaMetadata?.album?.id, mediaMetadata?.id),
         isPlaying = isPlaying,
         coroutineScope = scope,
         thumbnailRatio = 1f,
+        thumbnailHeight = thumbnailHeight,
         modifier =
             modifier
                 .focusable()
@@ -146,12 +157,15 @@ internal fun LocalGridItem(
     menuState: MenuState,
     scope: CoroutineScope,
     modifier: Modifier = Modifier,
+    cardWidth: Dp = GridThumbnailHeight,
+    artistSize: Dp = GridThumbnailHeight,
 ) {
     val haptics = rememberYumaHaptics()
     when (item) {
         is Song -> {
             SongGridItem(
                 song = item,
+                thumbnailHeight = cardWidth,
                 modifier =
                     modifier
                         .fillMaxWidth()
@@ -186,6 +200,7 @@ internal fun LocalGridItem(
                 isActive = item.id == mediaMetadata?.album?.id,
                 isPlaying = isPlaying,
                 coroutineScope = scope,
+                thumbnailHeight = cardWidth,
                 modifier =
                     modifier
                         .fillMaxWidth()
@@ -209,6 +224,7 @@ internal fun LocalGridItem(
         is Artist -> {
             ArtistGridItem(
                 artist = item,
+                thumbnailHeight = artistSize,
                 modifier =
                     modifier
                         .fillMaxWidth()

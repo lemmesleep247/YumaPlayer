@@ -59,6 +59,7 @@ import moe.rukamori.archivetune.playback.queues.YouTubeQueue
 import moe.rukamori.archivetune.ui.component.MenuState
 import moe.rukamori.archivetune.ui.haptics.rememberYumaHaptics
 import moe.rukamori.archivetune.ui.menu.SongMenu
+import moe.rukamori.archivetune.ui.screens.home.HomeLayoutConfig
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -73,12 +74,7 @@ internal fun QuickPicksCardContent(
     val haptics = rememberYumaHaptics()
 
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val heroHeight =
-            when {
-                maxWidth >= 840.dp -> 380.dp
-                maxWidth >= 600.dp -> 356.dp
-                else -> 332.dp
-            }
+        val heroHeight = HomeLayoutConfig.quickPicksHeroHeight(maxWidth)
         val heroMaxWidth =
             (maxWidth - 48.dp)
                 .coerceAtLeast(232.dp)

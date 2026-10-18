@@ -7,9 +7,15 @@
 package moe.rukamori.archivetune.ui.screens.home
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
@@ -25,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
@@ -62,27 +69,35 @@ fun AccountPlaylistsSection(
 ) {
     val distinctPlaylists = remember(accountPlaylists) { accountPlaylists.distinctBy { it.id } }
 
-    LazyRow(
-        contentPadding =
-            WindowInsets.systemBars
-                .only(WindowInsetsSides.Horizontal)
-                .asPaddingValues(),
-        modifier = modifier,
-    ) {
-        itemsIndexed(
-            items = distinctPlaylists,
-            key = { index, item -> "${item.id}_$index" },
-            contentType = { _, _ -> "account_playlist" },
-        ) { index, item ->
-            YouTubeGridItemWrapper(
-                item = item,
-                mediaMetadata = mediaMetadata,
-                isPlaying = isPlaying,
-                navController = navController,
-                playerConnection = playerConnection,
-                menuState = menuState,
-                scope = scope,
-            )
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val cardWidth = HomeLayoutConfig.cardWidth(maxWidth)
+        val artistSize = HomeLayoutConfig.artistSize(maxWidth)
+        val horizontalInsets = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal).asPaddingValues()
+        val layoutDirection = LocalLayoutDirection.current
+        val startPadding = horizontalInsets.calculateStartPadding(layoutDirection) + HomeLayoutConfig.shelfHorizontalPadding
+        val endPadding = horizontalInsets.calculateEndPadding(layoutDirection) + HomeLayoutConfig.shelfHorizontalPadding
+
+        LazyRow(
+            contentPadding = PaddingValues(start = startPadding, end = endPadding),
+            horizontalArrangement = Arrangement.spacedBy(HomeLayoutConfig.shelfSpacing),
+        ) {
+            itemsIndexed(
+                items = distinctPlaylists,
+                key = { index, item -> "${item.id}_$index" },
+                contentType = { _, _ -> "account_playlist" },
+            ) { index, item ->
+                YouTubeGridItemWrapper(
+                    item = item,
+                    mediaMetadata = mediaMetadata,
+                    isPlaying = isPlaying,
+                    navController = navController,
+                    playerConnection = playerConnection,
+                    menuState = menuState,
+                    scope = scope,
+                    cardWidth = cardWidth,
+                    artistSize = artistSize,
+                )
+            }
         }
     }
 }
@@ -99,30 +114,38 @@ fun SimilarRecommendationsSection(
     scope: CoroutineScope,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
-        contentPadding =
-            WindowInsets.systemBars
-                .only(WindowInsetsSides.Horizontal)
-                .asPaddingValues(),
-        modifier = modifier,
-    ) {
-        itemsIndexed(
-            items = recommendation.items,
-            key = { index, item -> "${item.id}_$index" },
-            contentType = { _, item -> item::class },
-        ) { index, item ->
-            YouTubeGridItemWrapper(
-                item = item,
-                mediaMetadata = mediaMetadata,
-                isPlaying = isPlaying,
-                navController = navController,
-                playerConnection = playerConnection,
-                menuState = menuState,
-                scope = scope,
-                visibleItems = recommendation.items,
-                clickedIndex = index,
-                sectionTitle = recommendation.title.title,
-            )
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val cardWidth = HomeLayoutConfig.cardWidth(maxWidth)
+        val artistSize = HomeLayoutConfig.artistSize(maxWidth)
+        val horizontalInsets = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal).asPaddingValues()
+        val layoutDirection = LocalLayoutDirection.current
+        val startPadding = horizontalInsets.calculateStartPadding(layoutDirection) + HomeLayoutConfig.shelfHorizontalPadding
+        val endPadding = horizontalInsets.calculateEndPadding(layoutDirection) + HomeLayoutConfig.shelfHorizontalPadding
+
+        LazyRow(
+            contentPadding = PaddingValues(start = startPadding, end = endPadding),
+            horizontalArrangement = Arrangement.spacedBy(HomeLayoutConfig.shelfSpacing),
+        ) {
+            itemsIndexed(
+                items = recommendation.items,
+                key = { index, item -> "${item.id}_$index" },
+                contentType = { _, item -> item::class },
+            ) { index, item ->
+                YouTubeGridItemWrapper(
+                    item = item,
+                    mediaMetadata = mediaMetadata,
+                    isPlaying = isPlaying,
+                    navController = navController,
+                    playerConnection = playerConnection,
+                    menuState = menuState,
+                    scope = scope,
+                    visibleItems = recommendation.items,
+                    clickedIndex = index,
+                    sectionTitle = recommendation.title.title,
+                    cardWidth = cardWidth,
+                    artistSize = artistSize,
+                )
+            }
         }
     }
 }
