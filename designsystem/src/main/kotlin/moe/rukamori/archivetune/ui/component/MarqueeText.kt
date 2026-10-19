@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import moe.rukamori.archivetune.LocalMarqueeEnabled
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -51,8 +52,9 @@ fun MarqueeText(
     isVisible: Boolean = true
 ) {
     var hasOverflow by remember(text) { mutableStateOf(false) }
+    val marqueeEnabled = LocalMarqueeEnabled.current
 
-    val marqueeModifier = if (hasOverflow && isVisible) {
+    val marqueeModifier = if (hasOverflow && isVisible && marqueeEnabled) {
         Modifier
             .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
             .drawWithCache {
@@ -102,7 +104,7 @@ fun MarqueeText(
         textDecoration = textDecoration,
         textAlign = textAlign,
         lineHeight = lineHeight,
-        overflow = overflow,
+        overflow = if (marqueeEnabled) overflow else TextOverflow.Ellipsis,
         softWrap = softWrap,
         maxLines = maxLines,
         minLines = minLines,

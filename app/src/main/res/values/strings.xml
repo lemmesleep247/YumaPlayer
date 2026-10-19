@@ -15,7 +15,7 @@
     <string name="albums">Albums</string>
     <string name="playlists">Playlists</string>
     <plurals name="n_selected">
-        
+
         <item quantity="other">%d selected</item>
     </plurals>
     <string name="history">History</string>
@@ -524,6 +524,8 @@
     <string name="slider_style_circular">Circular</string>
     <string name="slider_style_simple">Simple</string>
     <string name="misc">Misc</string>
+    <string name="marquee_enabled">Scrolling text</string>
+    <string name="marquee_enabled_desc">Enable automatic scrolling for long titles</string>
     <string name="haptics">Vibration</string>
     <string name="haptics_desc">Enable haptic feedback on interactive elements</string>
     <string name="default_open_tab">Default open tab</string>

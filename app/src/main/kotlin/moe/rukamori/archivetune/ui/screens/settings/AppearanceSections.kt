@@ -395,6 +395,8 @@ fun AppearanceMiscSection(
         onShowTagsInLibraryChange = actions.onShowTagsInLibraryChange,
         swipeToSong = state.swipeToSong,
         onSwipeToSongChange = actions.onSwipeToSongChange,
+        marqueeEnabled = state.marqueeEnabled,
+        onMarqueeEnabledChange = actions.onMarqueeEnabledChange,
         modifier = modifier,
     )
 }
@@ -413,6 +415,8 @@ fun AppearanceMiscSection(
     onShowTagsInLibraryChange: (Boolean) -> Unit,
     swipeToSong: Boolean,
     onSwipeToSongChange: (Boolean) -> Unit,
+    marqueeEnabled: Boolean,
+    onMarqueeEnabledChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     PreferenceGroup(
@@ -504,6 +508,16 @@ fun AppearanceMiscSection(
                 icon = { Icon(painterResource(R.drawable.swipe), null, modifier = Modifier.size(24.dp)) },
                 checked = swipeToSong,
                 onCheckedChange = onSwipeToSongChange,
+            )
+        }
+
+        item {
+            SwitchPreference(
+                title = { Text(stringResource(R.string.marquee_enabled)) },
+                description = stringResource(R.string.marquee_enabled_desc),
+                icon = { Icon(painterResource(R.drawable.text_fields), null, modifier = Modifier.size(24.dp)) },
+                checked = marqueeEnabled,
+                onCheckedChange = onMarqueeEnabledChange,
             )
         }
     }

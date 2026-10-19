@@ -321,6 +321,8 @@
     <string name="player">Плеер</string>
     <string name="player_slider_style">Стиль ползунка плеера</string>
     <string name="misc">Разное</string>
+    <string name="marquee_enabled">Бегущая строка</string>
+    <string name="marquee_enabled_desc">Автоматическая прокрутка длинных названий</string>
     <string name="default_open_tab">Вкладка по умолчанию</string>
     <string name="lyrics_line_spacing">Интервал между строк</string>
     <string name="content">Контент</string>

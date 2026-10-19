@@ -10,6 +10,7 @@ import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
@@ -28,7 +29,9 @@ import moe.rukamori.archivetune.constants.CONTENT_TYPE_HEADER
 import moe.rukamori.archivetune.constants.CONTENT_TYPE_LIST
 import moe.rukamori.archivetune.constants.CONTENT_TYPE_SONG
 import moe.rukamori.archivetune.extensions.togglePlayPause
+import moe.rukamori.archivetune.innertube.models.ArtistItem
 import moe.rukamori.archivetune.innertube.models.BrowseEndpoint
+import moe.rukamori.archivetune.innertube.models.PlaylistItem
 import moe.rukamori.archivetune.innertube.models.SongItem
 import moe.rukamori.archivetune.innertube.pages.ArtistPage
 import moe.rukamori.archivetune.innertube.pages.ArtistSectionLayout
@@ -39,6 +42,8 @@ import moe.rukamori.archivetune.ui.component.NavigationTitle
 import moe.rukamori.archivetune.ui.component.YouTubeGridItem
 import moe.rukamori.archivetune.ui.component.YouTubeListItem
 import moe.rukamori.archivetune.ui.haptics.YumaHaptics
+import moe.rukamori.archivetune.ui.screens.home.HomeLayoutConfig
+import timber.log.Timber
 
 @OptIn(ExperimentalFoundationApi::class)
 fun LazyListScope.artistOnlineSections(
@@ -61,9 +66,18 @@ fun LazyListScope.artistOnlineSections(
                 NavigationTitle(
                     title = section.title,
                     onClick =
-                        section.moreEndpoint?.let {
+                        section.moreEndpoint?.let { endpoint ->
                             {
-                                navController.navigate(buildArtistItemsRoute(artistId, it))
+                                val route = buildArtistItemsRoute(artistId, endpoint)
+                                val safeRoute =
+                                    "artist/${Uri.encode(artistId)}/items?browseId=${Uri.encode(endpoint.browseId)}" +
+                                        if (endpoint.params.isNullOrBlank()) "" else "&params=<masked_len_${endpoint.params?.length}>"
+                                Timber.tag("ArtistItemsTrace").d(
+                                    "HeaderClick: sectionTitle=\"${section.title}\", browseId=${endpoint.browseId}, " +
+                                        "paramsPresent=${!endpoint.params.isNullOrEmpty()}, paramsLength=${endpoint.params?.length ?: 0}, " +
+                                        "safeRoute=$safeRoute"
+                                )
+                                navController.navigate(route)
                             }
                         },
                 )
@@ -75,7 +89,7 @@ fun LazyListScope.artistOnlineSections(
                 items = section.items.distinctBy { it.id },
                 key = { index, song -> "youtube_song_${song.id}_$index" },
                 contentType = { _, _ -> CONTENT_TYPE_SONG },
-            ) { index, song ->
+            ) { _, song ->
                 YouTubeListItem(
                     item = song as SongItem,
                     isActive = song.isActive(mediaMetadata),
@@ -129,41 +143,51 @@ fun LazyListScope.artistOnlineSections(
                 key = "youtube_section_grid_${section.title}_${section.items.firstOrNull()?.id.orEmpty()}_${section.moreEndpoint?.browseId.orEmpty()}",
                 contentType = CONTENT_TYPE_LIST,
             ) {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    items(
-                        items = section.items.distinctBy { it.id },
-                        key = { "youtube_${it.contentKey}" },
-                        contentType = { it.contentType },
-                    ) { item ->
-                        YouTubeGridItem(
-                            item = item,
-                            isActive = item.isActive(mediaMetadata),
-                            isPlaying = isPlaying,
-                            coroutineScope = coroutineScope,
-                            modifier =
-                                Modifier
-                                    .combinedClickable(
-                                        onClick = {
-                                            onYTItemClick(
-                                                item = item,
-                                                navController = navController,
-                                                playerConnection = playerConnection,
-                                            )
-                                        },
-                                        onLongClick = {
-                                            haptics.longPress()
-                                            showYTItemMenu(
-                                                menuState = menuState,
-                                                item = item,
-                                                navController = navController,
-                                                coroutineScope = coroutineScope,
-                                            )
-                                        },
-                                    ).animateItem(),
-                        )
+                BoxWithConstraints {
+                    val cardWidth = HomeLayoutConfig.cardWidth(maxWidth)
+                    val artistSize = HomeLayoutConfig.artistSize(maxWidth)
+
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = HomeLayoutConfig.shelfHorizontalPadding),
+                        horizontalArrangement = Arrangement.spacedBy(HomeLayoutConfig.shelfSpacing),
+                    ) {
+                        items(
+                            items = section.items.distinctBy { it.id },
+                            key = { "youtube_${it.contentKey}" },
+                            contentType = { it.contentType },
+                        ) { item ->
+                            val itemHeight = if (item is ArtistItem) artistSize else cardWidth
+
+                            YouTubeGridItem(
+                                item = item,
+                                isActive = item.isActive(mediaMetadata),
+                                isPlaying = isPlaying,
+                                fillMaxWidth = false,
+                                thumbnailRatio = 1f,
+                                thumbnailHeight = itemHeight,
+                                coroutineScope = coroutineScope,
+                                modifier =
+                                    Modifier
+                                        .combinedClickable(
+                                            onClick = {
+                                                onYTItemClick(
+                                                    item = item,
+                                                    navController = navController,
+                                                    playerConnection = playerConnection,
+                                                )
+                                            },
+                                            onLongClick = {
+                                                haptics.longPress()
+                                                showYTItemMenu(
+                                                    menuState = menuState,
+                                                    item = item,
+                                                    navController = navController,
+                                                    coroutineScope = coroutineScope,
+                                                )
+                                            },
+                                        ).animateItem(),
+                            )
+                        }
                     }
                 }
             }

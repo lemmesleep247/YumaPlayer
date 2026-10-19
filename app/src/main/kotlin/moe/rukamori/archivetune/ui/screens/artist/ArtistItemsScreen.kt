@@ -9,7 +9,9 @@ package moe.rukamori.archivetune.ui.screens.artist
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -22,13 +24,16 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -92,116 +97,34 @@ fun ArtistItemsScreen(
         }
     }
 
-    if (itemsPage == null) {
-        ShimmerHost(
-            modifier = Modifier.windowInsetsPadding(LocalPlayerAwareWindowInsets.current),
-        ) {
-            repeat(8) {
-                ListItemPlaceHolder()
-            }
-        }
-    } else if (itemsLayout == ArtistItemsPageLayout.LIST && itemsPage?.items?.firstOrNull() is SongItem) {
-        LazyColumn(
-            state = lazyListState,
-            contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
-        ) {
-            items(
-                items = itemsPage?.items.orEmpty().distinctBy { it.id },
-                key = { "artist_items_${it.contentKey}" },
-                contentType = { it.contentType },
-            ) { item ->
-                YouTubeListItem(
-                    item = item,
-                    isActive = item.isActive(mediaMetadata),
-                    isPlaying = isPlaying,
-                    trailingContent = {
-                        IconButton(
-                            onClick = {
-                                showYTItemMenu(
-                                    menuState = menuState,
-                                    item = item,
-                                    navController = navController,
-                                    coroutineScope = coroutineScope,
-                                )
-                            },
-                            onLongClick = {},
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.more_vert),
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    modifier =
-                        Modifier
-                            .clickable {
-                                if (item is SongItem) {
-                                    if (item.id == mediaMetadata?.id) {
-                                        playerConnection.player.togglePlayPause()
-                                    } else {
-                                        val songs =
-                                            itemsPage
-                                                ?.items
-                                                .orEmpty()
-                                                .filterIsInstance<SongItem>()
-                                        playerConnection.playQueue(
-                                            ListQueue(
-                                                title = title,
-                                                items = songs.map { it.toMediaItem() },
-                                                startIndex = songs.indexOfFirst { it.id == item.id }.coerceAtLeast(0),
-                                            ),
-                                        )
-                                    }
-                                } else {
-                                    onYTItemClick(
-                                        item = item,
-                                        navController = navController,
-                                        playerConnection = playerConnection,
-                                    )
-                                }
-                            },
-                )
-            }
-
-            if (itemsPage?.continuation != null) {
-                item(key = "loading") {
-                    ShimmerHost {
-                        repeat(3) {
-                            ListItemPlaceHolder()
-                        }
-                    }
+    Box(
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        if (itemsPage == null) {
+            ShimmerHost(
+                modifier = Modifier.windowInsetsPadding(LocalPlayerAwareWindowInsets.current),
+            ) {
+                repeat(8) {
+                    ListItemPlaceHolder()
                 }
             }
-        }
-    } else {
-        LazyVerticalGrid(
-            state = lazyGridState,
-            columns = GridCells.Adaptive(minSize = GridThumbnailHeight + 24.dp),
-            contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
-        ) {
-            items(
-                items = itemsPage?.items.orEmpty().distinctBy { it.id },
-                key = { "artist_items_${it.contentKey}" },
-                contentType = { it.contentType },
-            ) { item ->
-                YouTubeGridItem(
-                    item = item,
-                    isActive = item.isActive(mediaMetadata),
-                    isPlaying = isPlaying,
-                    fillMaxWidth = true,
-                    coroutineScope = coroutineScope,
-                    modifier =
-                        Modifier
-                            .combinedClickable(
+        } else if (itemsLayout == ArtistItemsPageLayout.LIST && itemsPage?.items?.firstOrNull() is SongItem) {
+            LazyColumn(
+                state = lazyListState,
+                contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
+            ) {
+                items(
+                    items = itemsPage?.items.orEmpty().distinctBy { it.id },
+                    key = { "artist_items_${it.contentKey}" },
+                    contentType = { it.contentType },
+                ) { item ->
+                    YouTubeListItem(
+                        item = item,
+                        isActive = item.isActive(mediaMetadata),
+                        isPlaying = isPlaying,
+                        trailingContent = {
+                            IconButton(
                                 onClick = {
-                                    onYTItemClick(
-                                        item = item,
-                                        navController = navController,
-                                        playerConnection = playerConnection,
-                                    )
-                                },
-                                onLongClick = {
-                                    haptics.longPress()
                                     showYTItemMenu(
                                         menuState = menuState,
                                         item = item,
@@ -209,61 +132,153 @@ fun ArtistItemsScreen(
                                         coroutineScope = coroutineScope,
                                     )
                                 },
-                            ).animateItem(),
-                )
-            }
+                                onLongClick = {},
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.more_vert),
+                                    contentDescription = null,
+                                )
+                            }
+                        },
+                        modifier =
+                            Modifier
+                                .clickable {
+                                    if (item is SongItem) {
+                                        if (item.id == mediaMetadata?.id) {
+                                            playerConnection.player.togglePlayPause()
+                                        } else {
+                                            val songs =
+                                                itemsPage
+                                                    ?.items
+                                                    .orEmpty()
+                                                    .filterIsInstance<SongItem>()
+                                            playerConnection.playQueue(
+                                                ListQueue(
+                                                    title = title,
+                                                    items = songs.map { it.toMediaItem() },
+                                                    startIndex = songs.indexOfFirst { it.id == item.id }.coerceAtLeast(0),
+                                                ),
+                                            )
+                                        }
+                                    } else {
+                                        onYTItemClick(
+                                            item = item,
+                                            navController = navController,
+                                            playerConnection = playerConnection,
+                                        )
+                                    }
+                                },
+                    )
+                }
 
-            if (itemsPage?.continuation != null) {
-                item(key = "loading") {
-                    ShimmerHost(Modifier.animateItem()) {
-                        GridItemPlaceHolder(fillMaxWidth = true)
+                if (itemsPage?.continuation != null) {
+                    item(key = "loading") {
+                        ShimmerHost {
+                            repeat(3) {
+                                ListItemPlaceHolder()
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            LazyVerticalGrid(
+                state = lazyGridState,
+                columns = GridCells.Adaptive(minSize = GridThumbnailHeight + 24.dp),
+                contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
+            ) {
+                items(
+                    items = itemsPage?.items.orEmpty().distinctBy { it.id },
+                    key = { "artist_items_${it.contentKey}" },
+                    contentType = { it.contentType },
+                ) { item ->
+                    YouTubeGridItem(
+                        item = item,
+                        isActive = item.isActive(mediaMetadata),
+                        isPlaying = isPlaying,
+                        fillMaxWidth = true,
+                        coroutineScope = coroutineScope,
+                        modifier =
+                            Modifier
+                                .combinedClickable(
+                                    onClick = {
+                                        onYTItemClick(
+                                            item = item,
+                                            navController = navController,
+                                            playerConnection = playerConnection,
+                                        )
+                                    },
+                                    onLongClick = {
+                                        haptics.longPress()
+                                        showYTItemMenu(
+                                            menuState = menuState,
+                                            item = item,
+                                            navController = navController,
+                                            coroutineScope = coroutineScope,
+                                        )
+                                    },
+                                ).animateItem(),
+                    )
+                }
+
+                if (itemsPage?.continuation != null) {
+                    item(key = "loading") {
+                        ShimmerHost(Modifier.animateItem()) {
+                            GridItemPlaceHolder(fillMaxWidth = true)
+                        }
                     }
                 }
             }
         }
-    }
 
-    TopAppBar(
-        title = { Text(title) },
-        navigationIcon = {
-            TopAppBarBackButton(navController = navController)
-        },
-        actions = {
-            val songs = itemsPage?.items.orEmpty().filterIsInstance<SongItem>()
-            if (songs.isNotEmpty()) {
-                IconButton(
-                    onClick = {
-                        playerConnection.playQueue(
-                            ListQueue(
-                                title = title,
-                                items = songs.map { it.toMediaItem() },
-                            ),
+        TopAppBar(
+            modifier = Modifier.align(Alignment.TopCenter),
+            scrollBehavior = scrollBehavior,
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.Transparent,
+                scrolledContainerColor = Color.Transparent,
+            ),
+            title = { Text(title) },
+            navigationIcon = {
+                TopAppBarBackButton(navController = navController)
+            },
+            actions = {
+                val songs = itemsPage?.items.orEmpty().filterIsInstance<SongItem>()
+                if (songs.isNotEmpty()) {
+                    IconButton(
+                        onClick = {
+                            playerConnection.playQueue(
+                                ListQueue(
+                                    title = title,
+                                    items = songs.map { it.toMediaItem() },
+                                ),
+                            )
+                        },
+                        onLongClick = {},
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.play),
+                            contentDescription = null,
                         )
-                    },
-                    onLongClick = {},
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.play),
-                        contentDescription = null,
-                    )
-                }
-                IconButton(
-                    onClick = {
-                        playerConnection.playQueue(
-                            ListQueue(
-                                title = title,
-                                items = songs.shuffled().map { it.toMediaItem() },
-                            ),
+                    }
+                    IconButton(
+                        onClick = {
+                            playerConnection.playQueue(
+                                ListQueue(
+                                    title = title,
+                                    items = songs.shuffled().map { it.toMediaItem() },
+                                ),
+                            )
+                        },
+                        onLongClick = {},
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.shuffle),
+                            contentDescription = null,
                         )
-                    },
-                    onLongClick = {},
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.shuffle),
-                        contentDescription = null,
-                    )
+                    }
                 }
-            }
-        },
-    )
+            },
+        )
+    }
 }

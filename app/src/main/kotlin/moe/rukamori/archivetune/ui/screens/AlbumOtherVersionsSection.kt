@@ -11,7 +11,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -45,6 +47,7 @@ import moe.rukamori.archivetune.ui.component.shimmer.ButtonPlaceholder
 import moe.rukamori.archivetune.ui.component.shimmer.ListItemPlaceHolder
 import moe.rukamori.archivetune.ui.component.shimmer.ShimmerHost
 import moe.rukamori.archivetune.ui.component.shimmer.TextPlaceholder
+import moe.rukamori.archivetune.ui.screens.home.HomeLayoutConfig
 
 @OptIn(ExperimentalFoundationApi::class)
 fun LazyListScope.albumOtherVersionsSection(
@@ -62,27 +65,37 @@ fun LazyListScope.albumOtherVersionsSection(
             )
         }
         item(key = ALBUM_KEY_OTHER_VERSIONS_LIST, contentType = CONTENT_TYPE_ALBUM_OTHER_VERSIONS_LIST) {
-            LazyRow {
-                items(
-                    items = otherVersions.distinctBy { it.id },
-                    key = { it.id },
-                ) { item ->
-                    val haptic = LocalHapticFeedback.current
-                    YouTubeGridItem(
-                        item = item,
-                        isActive = activeAlbumId == item.id,
-                        isPlaying = isPlaying,
-                        coroutineScope = coroutineScope,
-                        modifier =
-                            Modifier
-                                .combinedClickable(
-                                    onClick = { onAlbumClick(item.id) },
-                                    onLongClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onAlbumLongClick(item)
-                                    },
-                                ).animateItem(),
-                    )
+            BoxWithConstraints {
+                val cardWidth = HomeLayoutConfig.cardWidth(maxWidth)
+
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = HomeLayoutConfig.shelfHorizontalPadding),
+                    horizontalArrangement = Arrangement.spacedBy(HomeLayoutConfig.shelfSpacing),
+                ) {
+                    items(
+                        items = otherVersions.distinctBy { it.id },
+                        key = { it.id },
+                    ) { item ->
+                        val haptic = LocalHapticFeedback.current
+                        YouTubeGridItem(
+                            item = item,
+                            isActive = activeAlbumId == item.id,
+                            isPlaying = isPlaying,
+                            fillMaxWidth = false,
+                            thumbnailRatio = 1f,
+                            thumbnailHeight = cardWidth,
+                            coroutineScope = coroutineScope,
+                            modifier =
+                                Modifier
+                                    .combinedClickable(
+                                        onClick = { onAlbumClick(item.id) },
+                                        onLongClick = {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            onAlbumLongClick(item)
+                                        },
+                                    ).animateItem(),
+                        )
+                    }
                 }
             }
         }

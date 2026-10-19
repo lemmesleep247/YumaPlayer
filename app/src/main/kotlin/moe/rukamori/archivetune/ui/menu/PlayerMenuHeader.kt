@@ -30,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import moe.rukamori.archivetune.LocalMarqueeEnabled
 import coil3.compose.AsyncImage
 import moe.rukamori.archivetune.R
 import moe.rukamori.archivetune.models.MediaMetadata
@@ -87,13 +88,14 @@ internal fun PlayerMenuHeader(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                val marqueeEnabled = LocalMarqueeEnabled.current
                 Text(
                     text = nowPlayingTitle,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.basicMarquee(),
+                    modifier = if (marqueeEnabled) Modifier.basicMarquee() else Modifier,
                 )
                 if (nowPlayingSubtitle.isNotBlank()) {
                     Text(
@@ -102,7 +104,7 @@ internal fun PlayerMenuHeader(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.basicMarquee(),
+                        modifier = if (marqueeEnabled) Modifier.basicMarquee() else Modifier,
                     )
                 }
             }

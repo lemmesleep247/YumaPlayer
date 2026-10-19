@@ -26,6 +26,7 @@ import moe.rukamori.archivetune.models.ItemsPage
 import moe.rukamori.archivetune.utils.dataStore
 import moe.rukamori.archivetune.utils.get
 import moe.rukamori.archivetune.utils.reportException
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -47,6 +48,9 @@ class ArtistItemsViewModel
         val itemsLayout = MutableStateFlow(ArtistItemsPageLayout.LIST)
 
         init {
+            Timber.tag("ArtistItemsTrace").d(
+                "ViewModelLoadStart: browseId=$browseId, paramsPresent=${params != null}, paramsLength=${params?.length ?: 0}"
+            )
             viewModelScope.launch {
                 YouTube
                     .artistItems(
@@ -57,16 +61,35 @@ class ArtistItemsViewModel
                     ).onSuccess { artistItemsPage ->
                         title.value = artistItemsPage.title
                         itemsLayout.value = artistItemsPage.layout
+                        val hideExplicit = context.dataStore.get(HideExplicitKey, false)
+                        val blockedArtistIds = database.getBlockedArtistIds().toSet()
+
+                        val rawCount = artistItemsPage.items.size
+                        val distinctItems = artistItemsPage.items.distinctBy { it.id }
+                        val distinctCount = distinctItems.size
+                        val explicitFilteredItems = distinctItems.filterExplicit(hideExplicit)
+                        val explicitFilteredCount = explicitFilteredItems.size
+                        val blockedFilteredItems = explicitFilteredItems.filterBlockedArtists(blockedArtistIds)
+                        val blockedFilteredCount = blockedFilteredItems.size
+                        val publishedCount = blockedFilteredItems.size
+
+                        Timber.tag("ArtistItemsTrace").d(
+                            "ViewModelLoadSuccess: browseId=$browseId, title=\"${artistItemsPage.title}\", " +
+                                "layout=${artistItemsPage.layout}, rawCount=$rawCount, distinctCount=$distinctCount, " +
+                                "explicitFilteredCount=$explicitFilteredCount, blockedFilteredCount=$blockedFilteredCount, " +
+                                "publishedCount=$publishedCount, continuationPresent=${artistItemsPage.continuation != null}"
+                        )
+
                         itemsPage.value =
                             ItemsPage(
-                                items =
-                                    artistItemsPage.items
-                                        .distinctBy { it.id }
-                                        .filterExplicit(context.dataStore.get(HideExplicitKey, false))
-                                        .filterBlockedArtists(database.getBlockedArtistIds().toSet()),
+                                items = blockedFilteredItems,
                                 continuation = artistItemsPage.continuation,
                             )
                     }.onFailure {
+                        Timber.tag("ArtistItemsTrace").e(
+                            it,
+                            "ViewModelLoadError: browseId=$browseId, message=${it.message}"
+                        )
                         reportException(it)
                     }
             }
@@ -76,20 +99,40 @@ class ArtistItemsViewModel
             viewModelScope.launch {
                 val oldItemsPage = itemsPage.value ?: return@launch
                 val continuation = oldItemsPage.continuation ?: return@launch
+                Timber.tag("ArtistItemsTrace").d(
+                    "ViewModelLoadMoreStart: browseId=$browseId, continuationLen=${continuation.length}"
+                )
                 YouTube
                     .artistItemsContinuation(continuation)
                     .onSuccess { artistItemsContinuationPage ->
+                        val hideExplicit = context.dataStore.get(HideExplicitKey, false)
+                        val blockedArtistIds = database.getBlockedArtistIds().toSet()
+
+                        val prevPublishedCount = oldItemsPage.items.size
+                        val rawContinuationCount = artistItemsContinuationPage.items.size
+                        val combined = oldItemsPage.items + artistItemsContinuationPage.items
+                        val distinctItems = combined.distinctBy { it.id }
+                        val explicitFilteredItems = distinctItems.filterExplicit(hideExplicit)
+                        val blockedFilteredItems = explicitFilteredItems.filterBlockedArtists(blockedArtistIds)
+                        val publishedCount = blockedFilteredItems.size
+
+                        Timber.tag("ArtistItemsTrace").d(
+                            "ViewModelLoadMoreSuccess: browseId=$browseId, prevCount=$prevPublishedCount, " +
+                                "rawContinuationCount=$rawContinuationCount, publishedCount=$publishedCount, " +
+                                "continuationPresent=${artistItemsContinuationPage.continuation != null}"
+                        )
+
                         itemsPage.update {
                             ItemsPage(
-                                items =
-                                    (oldItemsPage.items + artistItemsContinuationPage.items)
-                                        .distinctBy { it.id }
-                                        .filterExplicit(context.dataStore.get(HideExplicitKey, false))
-                                        .filterBlockedArtists(database.getBlockedArtistIds().toSet()),
+                                items = blockedFilteredItems,
                                 continuation = artistItemsContinuationPage.continuation,
                             )
                         }
                     }.onFailure {
+                        Timber.tag("ArtistItemsTrace").e(
+                            it,
+                            "ViewModelLoadMoreError: browseId=$browseId, message=${it.message}"
+                        )
                         reportException(it)
                     }
             }

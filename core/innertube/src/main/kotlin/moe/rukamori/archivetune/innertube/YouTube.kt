@@ -215,6 +215,12 @@ object YouTube {
     ): Result<List<SongItem>> =
         BrowseClient.albumSongs(playlistId, album)
 
+    var traceLogger: ((String) -> Unit)?
+        get() = BrowseClient.traceLogger
+        set(value) {
+            BrowseClient.traceLogger = value
+        }
+
     suspend fun artist(browseId: String): Result<ArtistPage> =
         BrowseClient.artist(browseId)
 

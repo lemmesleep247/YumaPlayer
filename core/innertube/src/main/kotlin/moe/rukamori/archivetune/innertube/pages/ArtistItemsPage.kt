@@ -63,7 +63,7 @@ data class ArtistItemsPage(
                         ?.runs
                         ?.firstOrNull()
                         ?.text
-                        ?.parseTime() ?: return null,
+                        ?.parseTime(),
                 thumbnail = renderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl() ?: return null,
                 explicit =
                     renderer.badges?.find {

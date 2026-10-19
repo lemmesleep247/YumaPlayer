@@ -290,24 +290,42 @@ object Updater {
         return null
     }
 
+    private fun findMatchingAssetDownloadUrl(
+        assets: JSONArray?,
+        isCanary: Boolean = false,
+    ): String? {
+        if (assets == null || assets.length() == 0) return null
+        val targetType = if (isCanary) "canary" else "release"
+        val archPrefix = "app-$artifactPrefix${BuildConfig.DEVICE}-${BuildConfig.ARCHITECTURE}"
+        val universalPrefix = "app-$artifactPrefix${BuildConfig.DEVICE}-universal"
+
+        val assetList = (0 until assets.length()).mapNotNull(assets::optJSONObject)
+
+        val preferred = assetList.firstOrNull { asset ->
+            val name = asset.optString("name", "")
+            name.startsWith(archPrefix) &&
+                name.contains(targetType, ignoreCase = true) &&
+                name.endsWith(".apk", ignoreCase = true)
+        } ?: assetList.firstOrNull { asset ->
+            val name = asset.optString("name", "")
+            name.startsWith(universalPrefix) &&
+                name.contains(targetType, ignoreCase = true) &&
+                name.endsWith(".apk", ignoreCase = true)
+        }
+
+        return preferred?.optString("browser_download_url")?.takeIf { it.isNotBlank() }
+    }
+
     private fun parseReleasesJson(
         json: String,
-        expectedArtifactName: String = releaseArtifactName(),
+        isCanary: Boolean = false,
     ): List<ReleaseInfo> {
         val jsonArray = JSONArray(json)
         val releases = ArrayList<ReleaseInfo>(jsonArray.length())
         for (i in 0 until jsonArray.length()) {
             val item = jsonArray.getJSONObject(i)
             val assets = item.optJSONArray("assets")
-            val assetDownloadUrl =
-                assets?.let { releaseAssets ->
-                    (0 until releaseAssets.length())
-                        .asSequence()
-                        .mapNotNull(releaseAssets::optJSONObject)
-                        .firstOrNull { asset -> asset.optString("name") == expectedArtifactName }
-                        ?.optString("browser_download_url")
-                        ?.takeIf { it.isNotBlank() }
-                }
+            val assetDownloadUrl = findMatchingAssetDownloadUrl(assets, isCanary = isCanary)
             val body = if (item.has("body") && !item.isNull("body")) item.optString("body") else null
             val downloadUrl =
                 if (item.isNull("download_url")) {
@@ -435,7 +453,7 @@ object Updater {
             ?.takeIf { it.isNotBlank() }
             ?.let {
                 runCatching {
-                    parseReleasesJson(it, expectedArtifactName = releaseArtifactName(isCanary = true))
+                    parseReleasesJson(it, isCanary = true)
                 }.getOrNull()
             }
             ?: emptyList()
@@ -497,7 +515,7 @@ object Updater {
                     ?.takeIf { it.isNotBlank() }
                     ?.let {
                         runCatching {
-                            parseReleasesJson(it, expectedArtifactName = releaseArtifactName(isCanary = true))
+                            parseReleasesJson(it, isCanary = true)
                         }.getOrNull()
                     }
 
@@ -541,7 +559,7 @@ object Updater {
                     val networkBody = networkResult.body
                     val releases =
                         runCatching {
-                            parseReleasesJson(networkBody, expectedArtifactName = releaseArtifactName(isCanary = true))
+                            parseReleasesJson(networkBody, isCanary = true)
                         }.getOrNull().orEmpty()
 
                     if (releases.isNotEmpty()) {

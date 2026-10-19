@@ -103,7 +103,7 @@ internal fun NavGraphBuilder.mediaNavigationRoutes(
                 },
             ),
     ) {
-        OnlinePlaylistScreen(navController, scrollBehavior)
+        OnlinePlaylistScreen(navController)
     }
     composable(
         route = "local_playlist/{playlistId}",

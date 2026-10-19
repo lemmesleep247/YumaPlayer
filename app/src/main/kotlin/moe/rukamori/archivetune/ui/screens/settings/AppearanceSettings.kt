@@ -56,6 +56,7 @@ import moe.rukamori.archivetune.constants.HomeBackgroundParallaxStrengthKey
 import moe.rukamori.archivetune.constants.HomeBackgroundStyle
 import moe.rukamori.archivetune.constants.HomeBackgroundStyleKey
 import moe.rukamori.archivetune.constants.LibraryFilter
+import moe.rukamori.archivetune.constants.MarqueeEnabledKey
 import moe.rukamori.archivetune.constants.PureBlackKey
 import moe.rukamori.archivetune.constants.QuickPicksDisplayMode
 import moe.rukamori.archivetune.constants.QuickPicksDisplayModeKey
@@ -182,6 +183,11 @@ fun AppearanceSettings(navController: NavController) {
             QuickPicksDisplayModeKey,
             defaultValue = QuickPicksDisplayMode.CARD,
         )
+    val (marqueeEnabled, onMarqueeEnabledChange) =
+        rememberPreference(
+            MarqueeEnabledKey,
+            defaultValue = true,
+        )
 
     val fontPickerLauncher =
         rememberLauncherForActivityResult(
@@ -262,6 +268,7 @@ fun AppearanceSettings(navController: NavController) {
             showHomeCategoryChips = showHomeCategoryChips,
             showTagsInLibrary = showTagsInLibrary,
             swipeToSong = swipeToSong,
+            marqueeEnabled = marqueeEnabled,
         )
 
     val actions =
@@ -294,6 +301,7 @@ fun AppearanceSettings(navController: NavController) {
                 onShowHomeCategoryChipsChange = onShowHomeCategoryChipsChange,
                 onShowTagsInLibraryChange = onShowTagsInLibraryChange,
                 onSwipeToSongChange = onSwipeToSongChange,
+                onMarqueeEnabledChange = onMarqueeEnabledChange,
             )
         }
 

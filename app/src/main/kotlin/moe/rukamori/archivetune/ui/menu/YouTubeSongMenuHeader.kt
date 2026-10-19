@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import moe.rukamori.archivetune.LocalMarqueeEnabled
 import coil3.compose.AsyncImage
 import moe.rukamori.archivetune.R
 import moe.rukamori.archivetune.constants.LikeSource
@@ -58,7 +59,7 @@ internal fun YouTubeSongMenuHeader(
             headlineContent = {
                 Text(
                     text = song.title,
-                    modifier = Modifier.basicMarquee(),
+                    modifier = if (LocalMarqueeEnabled.current) Modifier.basicMarquee() else Modifier,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

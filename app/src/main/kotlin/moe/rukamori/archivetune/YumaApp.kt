@@ -35,6 +35,7 @@ import moe.rukamori.archivetune.constants.HomeBackgroundParallaxEnabledKey
 import moe.rukamori.archivetune.constants.HomeBackgroundParallaxStrengthKey
 import moe.rukamori.archivetune.constants.HomeBackgroundStyle
 import moe.rukamori.archivetune.constants.HomeBackgroundStyleKey
+import moe.rukamori.archivetune.constants.MarqueeEnabledKey
 import moe.rukamori.archivetune.constants.PureBlackKey
 import moe.rukamori.archivetune.constants.RandomHomeBackgroundOnStartupKey
 import moe.rukamori.archivetune.constants.UpdateChannelKey
@@ -100,6 +101,10 @@ fun YumaApp(
     val disableAnimations by rememberPreference(
         DisableAnimationsKey,
         defaultValue = defaultDisableAnimations,
+    )
+    val marqueeEnabled by rememberPreference(
+        MarqueeEnabledKey,
+        defaultValue = true,
     )
     val splashState =
         rememberAppSplashState(
@@ -209,6 +214,7 @@ fun YumaApp(
             isHomeScreenVisible = isHomeScreenVisible,
             onExpansionFraction = { playerExpansionFractionProvider = it },
             disableAnimations = disableAnimations,
+            marqueeEnabled = marqueeEnabled,
             splashEnabled = splashState.splashEnabled,
             useDarkTheme = useDarkTheme,
             pureBlack = pureBlack,

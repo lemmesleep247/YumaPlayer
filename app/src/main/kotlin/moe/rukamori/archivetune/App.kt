@@ -128,6 +128,9 @@ class App :
                 else -> Timber.tag("SpotifyPipeline").i(message)
             }
         }
+        YouTube.traceLogger = { message ->
+            Timber.tag("ArtistItemsTrace").d(message)
+        }
     }
 
     override fun newImageLoader(context: PlatformContext): ImageLoader = createAppImageLoader(context)

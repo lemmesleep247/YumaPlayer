@@ -27,6 +27,7 @@ import moe.rukamori.archivetune.constants.HomeBackgroundParallaxStrengthKey
 import moe.rukamori.archivetune.constants.HomeBackgroundStyle
 import moe.rukamori.archivetune.constants.HomeBackgroundStyleKey
 import moe.rukamori.archivetune.constants.LibraryFilter
+import moe.rukamori.archivetune.constants.MarqueeEnabledKey
 import moe.rukamori.archivetune.constants.PureBlackKey
 import moe.rukamori.archivetune.constants.QuickPicksDisplayMode
 import moe.rukamori.archivetune.constants.QuickPicksDisplayModeKey
@@ -55,6 +56,7 @@ internal object AppearanceContract {
     val BlurNavBar = BlurNavBarKey
     val BlurRadius = BlurRadiusKey
     val DisableAnimations = DisableAnimationsKey
+    val MarqueeEnabled = MarqueeEnabledKey
     val SplashOverlayEnabled = SplashOverlayEnabledKey
     val SplashShapePref = SplashShapePreferenceKey
     val ArchiveTuneCanvas = ArchiveTuneCanvasKey
@@ -123,6 +125,7 @@ data class AppearanceSettingsUiState(
     val showHomeCategoryChips: Boolean = true,
     val showTagsInLibrary: Boolean = true,
     val swipeToSong: Boolean = false,
+    val marqueeEnabled: Boolean = true,
 )
 
 typealias AppearanceUiState = AppearanceSettingsUiState
@@ -156,6 +159,7 @@ data class AppearanceSettingsUiActions(
     val onShowHomeCategoryChipsChange: (Boolean) -> Unit = {},
     val onShowTagsInLibraryChange: (Boolean) -> Unit = {},
     val onSwipeToSongChange: (Boolean) -> Unit = {},
+    val onMarqueeEnabledChange: (Boolean) -> Unit = {},
 )
 
 typealias AppearanceUiActions = AppearanceSettingsUiActions

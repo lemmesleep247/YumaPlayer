@@ -102,6 +102,7 @@ import coil3.request.allowHardware
 import coil3.request.crossfade
 import coil3.toBitmap
 import moe.rukamori.archivetune.BuildConfig
+import moe.rukamori.archivetune.LocalMarqueeEnabled
 import moe.rukamori.archivetune.R
 import moe.rukamori.archivetune.innertube.YouTube
 import moe.rukamori.archivetune.innertube.utils.hasYouTubeLoginCookie
@@ -370,6 +371,7 @@ fun ProfileIdentityCard(
                 }
             }
 
+            val marqueeEnabled = LocalMarqueeEnabled.current
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -381,7 +383,8 @@ fun ProfileIdentityCard(
                         fontWeight = FontWeight.Bold,
                     ),
                     maxLines = 1,
-                    modifier = Modifier.basicMarquee(),
+                    overflow = if (marqueeEnabled) TextOverflow.Clip else TextOverflow.Ellipsis,
+                    modifier = if (marqueeEnabled) Modifier.basicMarquee() else Modifier,
                 )
 
                 if (accountHandle.isNotBlank()) {
@@ -391,7 +394,8 @@ fun ProfileIdentityCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         ),
                         maxLines = 1,
-                        modifier = Modifier.basicMarquee(),
+                        overflow = if (marqueeEnabled) TextOverflow.Clip else TextOverflow.Ellipsis,
+                        modifier = if (marqueeEnabled) Modifier.basicMarquee() else Modifier,
                     )
                 } else if (!isLoggedIn) {
                     Text(
@@ -984,6 +988,7 @@ fun ExpressiveSegmentedRow(
                     tint = MaterialTheme.colorScheme.primary,
                 )
 
+                val marqueeEnabled = LocalMarqueeEnabled.current
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -995,7 +1000,8 @@ fun ExpressiveSegmentedRow(
                             fontWeight = FontWeight.SemiBold,
                         ),
                         maxLines = 1,
-                        modifier = Modifier.basicMarquee(),
+                        overflow = if (marqueeEnabled) TextOverflow.Clip else TextOverflow.Ellipsis,
+                        modifier = if (marqueeEnabled) Modifier.basicMarquee() else Modifier,
                     )
                     subtitle?.let {
                         Text(
@@ -1004,7 +1010,8 @@ fun ExpressiveSegmentedRow(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             ),
                             maxLines = 1,
-                            modifier = Modifier.basicMarquee(),
+                            overflow = if (marqueeEnabled) TextOverflow.Clip else TextOverflow.Ellipsis,
+                            modifier = if (marqueeEnabled) Modifier.basicMarquee() else Modifier,
                         )
                     }
                 }

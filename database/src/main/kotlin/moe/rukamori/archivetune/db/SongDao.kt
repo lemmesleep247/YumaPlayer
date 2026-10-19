@@ -599,7 +599,7 @@ interface SongDao {
                 FROM event
                 WHERE songId = song.id
                   AND timestamp > :fromTimeStamp AND timestamp <= :toTimeStamp) AS songCountListened,
-               (SELECT SUM(event.playTime)
+               (SELECT COALESCE(SUM(event.playTime), 0)
                 FROM event
                 WHERE songId = song.id
                   AND timestamp > :fromTimeStamp AND timestamp <= :toTimeStamp) AS timeListened
@@ -680,7 +680,7 @@ interface SongDao {
                          JOIN event ON song_artist_map.songId = event.songId
                 WHERE artistId = artist.id
                   AND timestamp > :fromTimeStamp AND timestamp <= :toTimeStamp) AS songCount,
-               (SELECT SUM(event.playTime)
+               (SELECT COALESCE(SUM(event.playTime), 0)
                 FROM song_artist_map
                          JOIN event ON song_artist_map.songId = event.songId
                 WHERE artistId = artist.id
@@ -690,6 +690,8 @@ interface SongDao {
                       FROM song_artist_map
                                 JOIN (SELECT songId, SUM(playTime) AS songTotalPlayTime
                                       FROM event
+                                      WHERE timestamp > :fromTimeStamp
+                                        AND timestamp <= :toTimeStamp
                                       GROUP BY songId) AS e
                                      ON song_artist_map.songId = e.songId
                       GROUP BY artistId

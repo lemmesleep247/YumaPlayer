@@ -14,6 +14,7 @@
 | 429 Too Many Requests | Frequent URL resolves, N+1 like requests | Exponential backoff plus batching (Spotify chunks of up to 50 URIs via `SyncUtils`). Looped retries without delay are forbidden |
 | Mid-stream network drop | Tunnel, Wi-Fi to LTE handover, VPN flap | Cancel the stale job, show buffering with a retry button. On reconnect, resume the stream instead of restarting the queue |
 | Empty / malformed JSON | Provider-side API change | Parser returns `Result.failure`; UI shows `Empty` or `Error`; logs contain no PII |
+| Empty ArtistItems screen | Shelf header navigation / YouTube InnerTube browse change | Diagnostic trace `ArtistItemsTrace` logs navigation parameters, ViewModel filter counters, and response branches/rejections without PII |
 
 ## 2. Playback Fallback (FLAC to Opus / AAC)
 

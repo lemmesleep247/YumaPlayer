@@ -10,7 +10,9 @@ package moe.rukamori.archivetune.ui.screens.search
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,6 +50,7 @@ import moe.rukamori.archivetune.ui.haptics.rememberYumaHaptics
 import moe.rukamori.archivetune.ui.menu.YouTubeAlbumMenu
 import moe.rukamori.archivetune.ui.menu.YouTubeArtistMenu
 import moe.rukamori.archivetune.ui.menu.YouTubeSongMenu
+import moe.rukamori.archivetune.ui.screens.home.HomeLayoutConfig
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -149,40 +152,49 @@ internal fun TrendingAlbumsSection(
         title = stringResource(R.string.top_albums),
         modifier = modifier,
     )
-    LazyRow(
-        contentPadding = LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Horizontal).asPaddingValues(),
-    ) {
-        items(
-            items = albums,
-            key = { album -> album.id },
-            contentType = { "trending_album" },
-        ) { album ->
-            YouTubeGridItem(
-                item = album,
-                isActive = mediaMetadata?.album?.id == album.id,
-                isPlaying = isPlaying,
-                coroutineScope = coroutineScope,
-                modifier =
-                    Modifier
-                        .combinedClickable(
-                            onClick = {
-                                navController.navigate("album/${album.id}")
-                            },
-                            onLongClick = {
-                                haptics.longPress()
-                                menuState.show {
-                                    YouTubeAlbumMenu(
-                                        albumItem = album,
-                                        navController = navController,
-                                        onDismiss = menuState::dismiss,
-                                    )
-                                }
-                            },
-                        ).animateItem(),
-            )
+    BoxWithConstraints {
+        val cardWidth = HomeLayoutConfig.cardWidth(maxWidth)
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = HomeLayoutConfig.shelfHorizontalPadding),
+            horizontalArrangement = Arrangement.spacedBy(HomeLayoutConfig.shelfSpacing),
+        ) {
+            items(
+                items = albums,
+                key = { album -> album.id },
+                contentType = { "trending_album" },
+            ) { album ->
+                YouTubeGridItem(
+                    item = album,
+                    isActive = mediaMetadata?.album?.id == album.id,
+                    isPlaying = isPlaying,
+                    fillMaxWidth = false,
+                    thumbnailRatio = 1f,
+                    thumbnailHeight = cardWidth,
+                    coroutineScope = coroutineScope,
+                    modifier =
+                        Modifier
+                            .combinedClickable(
+                                onClick = {
+                                    navController.navigate("album/${album.id}")
+                                },
+                                onLongClick = {
+                                    haptics.longPress()
+                                    menuState.show {
+                                        YouTubeAlbumMenu(
+                                            albumItem = album,
+                                            navController = navController,
+                                            onDismiss = menuState::dismiss,
+                                        )
+                                    }
+                                },
+                            ).animateItem(),
+                )
+            }
         }
     }
 }
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun SuggestedArtistsSection(
@@ -199,33 +211,41 @@ internal fun SuggestedArtistsSection(
         title = stringResource(R.string.stats_unique_artists),
         modifier = modifier,
     )
-    LazyRow(
-        contentPadding = LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Horizontal).asPaddingValues(),
-    ) {
-        items(
-            items = artists,
-            key = { artist -> artist.id },
-            contentType = { "trending_artist" },
-        ) { artist ->
-            YouTubeGridItem(
-                item = artist,
-                modifier =
-                    Modifier
-                        .combinedClickable(
-                            onClick = {
-                                navController.navigate("artist/${artist.id}")
-                            },
-                            onLongClick = {
-                                haptics.longPress()
-                                menuState.show {
-                                    YouTubeArtistMenu(
-                                        artist = artist,
-                                        onDismiss = menuState::dismiss,
-                                    )
-                                }
-                            },
-                        ).animateItem(),
-            )
+    BoxWithConstraints {
+        val artistSize = HomeLayoutConfig.artistSize(maxWidth)
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = HomeLayoutConfig.shelfHorizontalPadding),
+            horizontalArrangement = Arrangement.spacedBy(HomeLayoutConfig.shelfSpacing),
+        ) {
+            items(
+                items = artists,
+                key = { artist -> artist.id },
+                contentType = { "trending_artist" },
+            ) { artist ->
+                YouTubeGridItem(
+                    item = artist,
+                    fillMaxWidth = false,
+                    thumbnailRatio = 1f,
+                    thumbnailHeight = artistSize,
+                    modifier =
+                        Modifier
+                            .combinedClickable(
+                                onClick = {
+                                    navController.navigate("artist/${artist.id}")
+                                },
+                                onLongClick = {
+                                    haptics.longPress()
+                                    menuState.show {
+                                        YouTubeArtistMenu(
+                                            artist = artist,
+                                            onDismiss = menuState::dismiss,
+                                        )
+                                    }
+                                },
+                            ).animateItem(),
+                )
+            }
         }
     }
 }
