@@ -17,7 +17,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.database.ContentObserver
-import android.media.AudioDeviceCallback
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.audiofx.BassBoost
@@ -51,20 +50,16 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import moe.rukamori.archivetune.audiodsp.AnalysisStore
 import moe.rukamori.archivetune.audiodsp.AudioDeck
 import moe.rukamori.archivetune.audiodsp.AutomixPlan
 import moe.rukamori.archivetune.audiodsp.CrossfadeConfig
@@ -72,7 +67,6 @@ import moe.rukamori.archivetune.audiodsp.CrossfadeTarget
 import moe.rukamori.archivetune.audiodsp.DeckController
 import moe.rukamori.archivetune.audiodsp.DjFilterAudioProcessor
 import moe.rukamori.archivetune.audiodsp.DualForwardingPlayer
-import moe.rukamori.archivetune.audiodsp.DualPlayerRoleHolder
 import moe.rukamori.archivetune.cast.CastMediaItemResolver
 import moe.rukamori.archivetune.cast.CastPlaybackRepository
 import moe.rukamori.archivetune.cast.CastPlaybackRepositoryLocator
@@ -115,9 +109,6 @@ import moe.rukamori.archivetune.utils.reportException
 import moe.rukamori.archivetune.widget.LoadWidgetInsightsUseCase
 import okhttp3.OkHttpClient
 
-internal typealias DiscordSyncRequest = moe.rukamori.archivetune.playback.discord.DiscordSyncRequest
-internal typealias Quadruple<A, B, C, D> = moe.rukamori.archivetune.playback.discord.Quadruple<A, B, C, D>
-internal typealias StaleDiscordSyncException = moe.rukamori.archivetune.playback.discord.StaleDiscordSyncException
 internal typealias PendingHistoryFinalization = moe.rukamori.archivetune.playback.history.PendingHistoryFinalization
 internal typealias ImmediateHistoryResult = moe.rukamori.archivetune.playback.history.ImmediateHistoryResult
 
@@ -208,8 +199,6 @@ class MusicService :
     internal var lastAudioOutputDeviceSignature: String? get() = audioPolicyHolder.lastAudioOutputDeviceSignature; set(v) { audioPolicyHolder.lastAudioOutputDeviceSignature = v }
     internal var lastAudioRouteRecoveryRealtimeMs: Long get() = audioPolicyHolder.lastAudioRouteRecoveryRealtimeMs; set(v) { audioPolicyHolder.lastAudioRouteRecoveryRealtimeMs = v }
 
-    internal val audioDeviceCallback: AudioDeviceCallback get() = audioPolicyHolder.audioDeviceCallback
-
     internal val serviceLifecycle: MusicServiceLifecycle by lazy {
         MusicServiceLifecycle(
             scope = scope,
@@ -218,7 +207,6 @@ class MusicService :
         )
     }
     private val binder = MusicBinder()
-    internal val hasBoundClients: Boolean get() = serviceLifecycle.hasBoundClients
 
     override lateinit var connectivityManager: ConnectivityManager
     override lateinit var connectivityObserver: NetworkConnectivityObserver
@@ -249,7 +237,7 @@ class MusicService :
     var queueTitle: String? = null
     @Volatile
     internal var isInitializingQueue = false
-    internal var playQueueJob: Job? = null
+
     @Volatile
     override var isRestoringPersistentState = false
 
@@ -264,18 +252,9 @@ class MusicService :
     internal val discordHoldController = DiscordHoldController(this)
     internal val discordSyncOrchestrator by lazy { DiscordSyncOrchestrator(this, discordHoldController) }
 
-    internal var activeDiscordHoldState: ActiveHoldState? get() = discordHoldController.activeHoldState; set(v) { discordHoldController.activeHoldState = v }
-    internal var activeDiscordHoldTimeoutJob: Job? get() = discordHoldController.activeHoldTimeoutJob; set(v) { discordHoldController.activeHoldTimeoutJob = v }
-    internal var lastAppliedVisiblePresence: LastAppliedVisiblePresence? get() = discordHoldController.lastAppliedVisiblePresence; set(v) { discordHoldController.lastAppliedVisiblePresence = v }
-    internal var lastDiscordPresenceDecision: DiscordPresenceDecision? get() = discordHoldController.lastDecision; set(v) { discordHoldController.lastDecision = v }
     internal var pausedPresenceGate: PausedPresenceGate get() = discordHoldController.pausedPresenceGate; set(v) { discordHoldController.pausedPresenceGate = v }
     internal var discordServiceStopping: Boolean get() = discordSyncOrchestrator.discordServiceStopping; set(v) { discordSyncOrchestrator.discordServiceStopping = v }
     internal var lastPresenceToken: String? get() = discordSyncOrchestrator.lastPresenceToken; set(v) { discordSyncOrchestrator.lastPresenceToken = v }
-    internal val discordSyncEpoch: AtomicLong get() = discordSyncOrchestrator.discordSyncEpoch
-    internal val discordSyncRequests: Channel<DiscordSyncRequest> get() = discordSyncOrchestrator.discordSyncRequests
-    internal var discordSyncWorkerJob: Job? get() = discordSyncOrchestrator.discordSyncWorkerJob; set(v) { discordSyncOrchestrator.discordSyncWorkerJob = v }
-    internal val pendingDiscordRefreshWaiters: MutableList<CompletableDeferred<Boolean>> get() = discordSyncOrchestrator.pendingDiscordRefreshWaiters
-    internal val discordRefreshWaitersMutex: Mutex get() = discordSyncOrchestrator.discordRefreshWaitersMutex
 
     internal val playbackStreamRecoveryTracker = PlaybackStreamRecoveryTracker()
     internal val queuePersistenceStore: QueuePersistenceStore by lazy {
@@ -322,13 +301,9 @@ class MusicService :
     val activeDeck: AudioDeck get() = playerEngineHolder.activeDeck
     val transitionDeck: AudioDeck? get() = playerEngineHolder.transitionDeck
     override var crossfadeConfig: CrossfadeConfig = CrossfadeConfig()
-    internal val analysisStore: AnalysisStore get() = TrackAnalyzer
 
-    internal val dualForwardingPlayer: DualForwardingPlayer get() = playerEngineHolder.dualForwardingPlayer
-    internal val dualPlayerRoleHolder: DualPlayerRoleHolder get() = playerEngineHolder.dualPlayerRoleHolder
     override val secondaryCrossfadePlayer: ExoPlayer? get() = playerEngineHolder.secondaryCrossfadePlayer
     internal var secondaryCrossfadeTarget: CrossfadeTarget? get() = playerEngineHolder.secondaryCrossfadeTarget; set(v) { playerEngineHolder.secondaryCrossfadeTarget = v }
-    internal val reserveCrossfadePlayer: ExoPlayer? get() = playerEngineHolder.reserveCrossfadePlayer
 
     internal var secondaryPreparationFailedMediaId: String? = null
     internal var hasPreparedSecondaryPlayer: Boolean = false
@@ -410,8 +385,6 @@ class MusicService :
     internal var virtualizer: Virtualizer? get() = audioPolicyHolder.virtualizer; set(v) { audioPolicyHolder.virtualizer = v }
     internal var loudnessEnhancer: LoudnessEnhancer? get() = audioPolicyHolder.loudnessEnhancer; set(v) { audioPolicyHolder.loudnessEnhancer = v }
     internal val audioEffectPlayerListener: Player.Listener get() = playerListeners.audioEffectPlayerListener
-
-    internal var lastDiscordUpdateTime = 0L
 
     override var scrobbleManager: moe.rukamori.archivetune.utils.ScrobbleManager? = null
 
@@ -603,8 +576,6 @@ class MusicService :
     override fun resolveAudioNormalizationFactor(mediaId: String?, format: FormatEntity?, normalizeAudio: Boolean): Float =
         moe.rukamori.archivetune.playback.resolveAudioNormalizationFactor(mediaId, format, normalizeAudio)
 
-    fun hasAudioFocusForPlayback(): Boolean = audioPolicyHolder.hasAudioFocusForPlayback()
-
     override fun hasBluetoothConnectPermission(): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.S || checkSelfPermission(android.Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
 
@@ -616,10 +587,7 @@ class MusicService :
     override fun unregisterBluetoothReceiver(receiver: BroadcastReceiver) { runCatching { unregisterReceiver(receiver) } }
 
     internal fun forceRevivePlayback(): Boolean = playbackRecoveryEngine.forceRevivePlayback()
-    internal fun revivePlaybackFromStall() = playbackRecoveryEngine.revivePlaybackFromStall()
     internal fun evictMediaConnectionPools() = playerEngineHolder.evictMediaConnectionPools()
-    internal fun skipOnError() = playbackRecoveryEngine.skipOnError()
-    internal fun stopOnError() = playbackRecoveryEngine.stopOnError()
 
     override fun updateNotification() {
         serviceSessionHolder.updateNotification(
@@ -641,7 +609,6 @@ class MusicService :
 
     fun playQueue(queue: Queue, playWhenReady: Boolean = true) = playQueueInternal(queue, playWhenReady)
     fun startRadioSeamlessly() = startRadioSeamlesslyInternal()
-    fun clearAutomix() = clearAutomixInternal()
     fun clearQueue() = clearQueueInternal()
     fun onInfiniteQueueDisabled() = onInfiniteQueueDisabledInternal()
     fun onInfiniteQueueEnabled() = onInfiniteQueueEnabledInternal()
@@ -661,11 +628,10 @@ class MusicService :
     internal fun isCurrentPlaybackItemLocal(currentMediaMetadata: MediaMetadata): Boolean =
         currentSong.value?.song?.isLocal == true || currentMediaMetadata.id.trim().isLocalMediaId() || player.currentMediaItem?.localConfiguration?.uri?.shouldBypassPlayerCache() == true
 
-    internal fun onMediaItemTransitionInternal() = playerListeners.onMediaItemTransitionInternal()
     internal fun onPlayerError(error: PlaybackException) = playbackRecoveryEngine.onPlayerError(error)
 
     internal suspend fun handlePresenceAndListenBrainz(
-        mediaId: String?, mediaMetadata: moe.rukamori.archivetune.models.MediaMetadata?, durationMs: Long, positionMs: Long, reason: String,
+        mediaId: String?, mediaMetadata: MediaMetadata?, durationMs: Long, positionMs: Long, reason: String,
     ) = handlePresenceAndListenBrainzInternal(mediaId, mediaMetadata, durationMs, positionMs, reason)
 
     override fun updateAudioOffload(enabled: Boolean) {
@@ -848,15 +814,6 @@ class MusicService :
     }
 
     companion object {
-        internal fun shouldStopServiceOnTaskRemoved(
-            stopMusicOnTaskClearEnabled: Boolean,
-            isHostSessionActive: Boolean,
-            isPlaybackInactive: Boolean,
-        ): Boolean = PlaybackConstants.shouldStopServiceOnTaskRemoved(
-            stopMusicOnTaskClearEnabled,
-            isHostSessionActive,
-            isPlaybackInactive,
-        )
 
         const val ROOT = "root"
         const val HOME = "home"
@@ -886,17 +843,9 @@ class MusicService :
         const val EXTRA_MEDIA_NOTIFICATION_DELETE_INTENT =
             MusicServiceNotification.EXTRA_MEDIA_NOTIFICATION_DELETE_INTENT
         const val NOTIFICATION_ID = MusicServiceNotification.NOTIFICATION_ID
-        internal const val TOGETHER_NOTIFICATION_CHANNEL_ID =
-            MusicServiceNotification.TOGETHER_NOTIFICATION_CHANNEL_ID
-        internal const val TOGETHER_PARTICIPANT_NOTIFICATION_ID =
-            MusicServiceNotification.TOGETHER_PARTICIPANT_NOTIFICATION_ID
-        const val ERROR_CODE_NO_STREAM = 1000001
         const val CHUNK_LENGTH = PlaybackConstants.CHUNK_LENGTH
-        val RETRYABLE_STREAM_RESPONSE_CODES = setOf(403, 404, 410, 416)
-        const val PERSISTENT_QUEUE_FILE = "persistent_queue.data"
-        const val PERSISTENT_AUTOMIX_FILE = "persistent_automix.data"
-        const val PERSISTENT_PLAYER_STATE_FILE = "persistent_player_state.data"
-        const val MAX_CONSECUTIVE_ERR = 5
+        const val PERSISTENT_QUEUE_FILE = QueuePersistenceStore.PERSISTENT_QUEUE_FILE
+        const val PERSISTENT_PLAYER_STATE_FILE = QueuePersistenceStore.PERSISTENT_PLAYER_STATE_FILE
         const val AUDIO_ROUTE_CHANGE_DEBOUNCE_MS = 350L
         const val AUDIO_EFFECT_ROUTE_REBIND_DELAY_MS = 200L
         const val AUDIO_ROUTE_RECOVERY_MIN_INTERVAL_MS = 1_500L
@@ -917,20 +866,10 @@ class MusicService :
         const val CROSSFADE_HANDOFF_READY_TIMEOUT_MS = PlaybackConstants.CROSSFADE_HANDOFF_READY_TIMEOUT_MS
         const val CROSSFADE_HANDOFF_BUFFER_MS = PlaybackConstants.CROSSFADE_HANDOFF_BUFFER_MS
         const val CROSSFADE_HANDOFF_SEEK_GUARD_MS = PlaybackConstants.CROSSFADE_HANDOFF_SEEK_GUARD_MS
-        const val CROSSFADE_MIN_BUFFER_BEFORE_START_MS = PlaybackConstants.CROSSFADE_MIN_BUFFER_BEFORE_START_MS
-        const val CROSSFADE_MAX_BUFFER_BEFORE_START_MS = PlaybackConstants.CROSSFADE_MAX_BUFFER_BEFORE_START_MS
-        const val PRIMARY_MIN_BUFFER_MS = PlaybackConstants.PRIMARY_MIN_BUFFER_MS
-        const val PRIMARY_MAX_BUFFER_MS = PlaybackConstants.PRIMARY_MAX_BUFFER_MS
-        const val PRIMARY_BUFFER_FOR_PLAYBACK_MS = PlaybackConstants.PRIMARY_BUFFER_FOR_PLAYBACK_MS
-        const val PRIMARY_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS = PlaybackConstants.PRIMARY_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
-        const val CROSSFADE_MIN_BUFFER_MS = PlaybackConstants.CROSSFADE_MIN_BUFFER_MS
-        const val CROSSFADE_MAX_BUFFER_MS = PlaybackConstants.CROSSFADE_MAX_BUFFER_MS
         const val CROSSFADE_FRAME_MS = PlaybackConstants.CROSSFADE_FRAME_MS
         const val MIN_AUDIBLE_EFFECTIVE_VOLUME = 0.01f
         const val STUCK_MUTED_VOLUME_EPSILON = 0.001f
         const val AUDIBLE_PLAYBACK_VOLUME_CHECK_MS = 2_000L
-        const val NETWORK_STALL_WINDOW_MS = 3_000L
-        private const val FORCE_REVIVE_DEBOUNCE_MS = 2_000L
         internal const val ArchiveTuneExtractorCacheFingerprintPrefix = "archivetune_extractor:"
         internal const val ArchiveTuneExtractorCacheTtlMs = 5 * 60 * 1000L
     }

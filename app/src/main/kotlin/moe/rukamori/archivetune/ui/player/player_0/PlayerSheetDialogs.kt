@@ -11,11 +11,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import moe.rukamori.archivetune.LocalDatabase
 import moe.rukamori.archivetune.LocalPlayerConnection
 import moe.rukamori.archivetune.MainActivity
 import moe.rukamori.archivetune.R
 import moe.rukamori.archivetune.extensions.metadata
+import moe.rukamori.archivetune.models.MediaMetadata
 import moe.rukamori.archivetune.ui.menu.AddToPlaylistDialog
 import moe.rukamori.archivetune.ui.menu.EqualizerDialog
 import moe.rukamori.archivetune.ui.menu.TempoPitchDialog
@@ -50,6 +52,10 @@ internal fun PlayerSheetDialogs(
 ) {
     val context = LocalContext.current
     val playerConnection = LocalPlayerConnection.current
+    val mediaMetadata by playerConnection?.mediaMetadata?.collectAsStateWithLifecycle()
+        ?: remember { mutableStateOf<MediaMetadata?>(null) }
+    val hasArtistId = mediaMetadata?.artists?.firstOrNull()?.id?.isNotBlank() == true
+    val hasAlbumId = mediaMetadata?.album?.id?.isNotBlank() == true
     val activityResultLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
 
     var showEqualizerDialog by remember { mutableStateOf(false) }
@@ -129,6 +135,8 @@ internal fun PlayerSheetDialogs(
             onDismissSettingsMenu()
             showAddToPlaylistDialog = true
         },
+        hasArtistId = hasArtistId,
+        hasAlbumId = hasAlbumId,
         onAction = onAction
     )
 
