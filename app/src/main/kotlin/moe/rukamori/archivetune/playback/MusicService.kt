@@ -97,6 +97,7 @@ import moe.rukamori.archivetune.playback.history.PlaybackHistoryStore
 import moe.rukamori.archivetune.playback.host.ServiceConfigCollector
 import moe.rukamori.archivetune.playback.queues.EmptyQueue
 import moe.rukamori.archivetune.playback.queues.Queue
+import moe.rukamori.archivetune.playback.queues.SpotifyQueue
 import moe.rukamori.archivetune.playback.session.ServiceSessionHolder
 import moe.rukamori.archivetune.playback.smart.TrackAnalyzer
 import moe.rukamori.archivetune.utils.NetworkConnectivityObserver
@@ -276,6 +277,7 @@ class MusicService :
     override val currentMediaMetadata: MutableStateFlow<moe.rukamori.archivetune.models.MediaMetadata?> get() = configCollector.currentMediaMetadata
     override val queueRestoreCompleted = MutableStateFlow(false)
     val infiniteQueueLoading = MutableStateFlow(false)
+    val previousQueueLoading = MutableStateFlow(false)
     internal var infiniteQueueJob: Job? = null
     override val playerInitialized = MutableStateFlow(false)
     override val currentSong: StateFlow<Song?> get() = configCollector.currentSong
@@ -612,6 +614,14 @@ class MusicService :
     fun clearQueue() = clearQueueInternal()
     fun onInfiniteQueueDisabled() = onInfiniteQueueDisabledInternal()
     fun onInfiniteQueueEnabled() = onInfiniteQueueEnabledInternal()
+    fun requestQueuePagination() {
+        playerListeners.triggerPagination(isPlaybackEnded = false)
+    }
+    fun requestPreviousQueuePage(): Boolean = playerListeners.triggerBackwardPagination()
+    fun hasPreviousQueuePage(): Boolean {
+        val queue = currentQueue as? SpotifyQueue ?: return false
+        return queue.hasPreviousPage() || playerListeners.hasPendingBackwardBatch()
+    }
     fun stopAndClearPlayback(clearPersistentState: Boolean = false) = stopAndClearPlaybackInternal(clearPersistentState)
     fun playNext(items: List<MediaItem>) = playNextInternal(items)
     fun addToQueue(items: List<MediaItem>) = addToQueueInternal(items)

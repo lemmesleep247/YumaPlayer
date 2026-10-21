@@ -8,6 +8,7 @@ package moe.rukamori.archivetune.ui.player.queue_0
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,13 +31,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -58,6 +64,8 @@ import moe.rukamori.archivetune.ui.theme.darkYumaColorScheme
 import moe.rukamori.archivetune.utils.rememberPreference
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+
+private const val BackwardPreloadThreshold = 2
 
 internal val Timeline.Window.queueItemKey: Long
     get() =
@@ -93,6 +101,7 @@ fun QueueScreen(
     var dragToKey by remember { mutableStateOf<Any?>(null) }
     var initialWindowsSnapshot by remember { mutableStateOf<List<Timeline.Window>?>(null) }
     var reorderHandleInUse by remember { mutableStateOf(false) }
+    var backwardRequestLatched by remember { mutableStateOf(false) }
 
     val currentPlayingUid =
         remember(state.currentWindowIndex, state.queueWindows) {
@@ -111,7 +120,7 @@ fun QueueScreen(
         }.distinctUntilChanged()
             .collect { shouldLoadMore ->
                 if (shouldLoadMore) {
-                    playerConnection?.service?.onInfiniteQueueEnabled()
+                    playerConnection?.service?.requestQueuePagination()
                 }
             }
     }
@@ -128,6 +137,43 @@ fun QueueScreen(
                 mutableQueueWindows.add(to.index, mutableQueueWindows.removeAt(from.index))
             },
         )
+
+    val queueActive = rememberUpdatedState(isSheetActive)
+    LaunchedEffect(lazyListState) {
+        lazyListState.interactionSource.interactions.collect { interaction ->
+            if (interaction is DragInteraction.Start) {
+                backwardRequestLatched = false
+            }
+        }
+    }
+    val previousPageNestedScroll =
+        remember(lazyListState, reorderableState, playerConnection) {
+            object : NestedScrollConnection {
+                override fun onPreScroll(
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    if (source != NestedScrollSource.UserInput || available.y <= 0f) return Offset.Zero
+                    if (!queueActive.value || reorderableState.isAnyItemDragging || reorderHandleInUse) {
+                        return Offset.Zero
+                    }
+                    val firstVisibleIndex =
+                        lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()?.index
+                            ?: return Offset.Zero
+                    if (firstVisibleIndex > BackwardPreloadThreshold) {
+                        backwardRequestLatched = false
+                        return Offset.Zero
+                    }
+                    if (backwardRequestLatched) return Offset.Zero
+                    val service = playerConnection?.service ?: return Offset.Zero
+                    if (service.previousQueueLoading.value || !service.hasPreviousQueuePage()) {
+                        return Offset.Zero
+                    }
+                    backwardRequestLatched = service.requestPreviousQueuePage()
+                    return Offset.Zero
+                }
+            }
+        }
 
     LaunchedEffect(state.queueWindows) {
         if (!reorderableState.isAnyItemDragging) {
@@ -177,7 +223,7 @@ fun QueueScreen(
                 LazyColumn(
                     state = lazyListState,
                     userScrollEnabled = !(reorderableState.isAnyItemDragging || reorderHandleInUse),
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().nestedScroll(previousPageNestedScroll),
                     contentPadding = contentPadding,
                 ) {
                     itemsIndexed(

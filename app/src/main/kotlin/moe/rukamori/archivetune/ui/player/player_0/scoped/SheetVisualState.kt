@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
+import moe.rukamori.archivetune.PlayerDockGeometry
 import moe.rukamori.archivetune.ui.state.PlayerSheetState
 
 internal data class SheetVisualState(
@@ -46,8 +47,7 @@ internal fun rememberSheetVisualState(
 ): SheetVisualState {
     val density = LocalDensity.current
 
-    // Константа высоты мини-плеера (в PixelPlayer это 64.dp)
-    val miniPlayerHeightDp = 64.dp
+    val miniPlayerHeightDp = PlayerDockGeometry.miniPlayerHeight
 
     val baseBottomPadding = remember(containerHeight, sheetCollapsedTargetY, density) {
         val targetYDp = with(density) { sheetCollapsedTargetY.toDp() }

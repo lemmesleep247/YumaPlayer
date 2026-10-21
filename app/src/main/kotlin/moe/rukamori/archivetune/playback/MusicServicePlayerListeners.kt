@@ -31,6 +31,7 @@ import moe.rukamori.archivetune.models.MediaMetadata
 import moe.rukamori.archivetune.playback.listeners.PlayerEventFanout
 import moe.rukamori.archivetune.playback.listeners.PlayerStateHandler
 import moe.rukamori.archivetune.playback.listeners.PlayerTransitionHandler
+import moe.rukamori.archivetune.playback.listeners.QueueBackwardPaging
 import moe.rukamori.archivetune.playback.listeners.TogetherPlaybackEchoPolicy
 import moe.rukamori.archivetune.playback.queues.Queue
 import moe.rukamori.archivetune.together.ControlAction
@@ -62,6 +63,7 @@ internal class MusicServicePlayerListeners(
         val autoAddedMediaIds: MutableSet<String>
         val dataStore: DataStore<Preferences>
         fun onInfiniteQueueEnabled()
+        fun setPreviousQueueLoading(isLoading: Boolean)
         suspend fun saveQueueToDisk()
         fun applyCurrentFirstShuffleOrder()
 
@@ -194,6 +196,13 @@ internal class MusicServicePlayerListeners(
             transitionHandler = playerTransitionHandler,
         )
 
+    private val queueBackwardPaging =
+        QueueBackwardPaging(
+            scope = scope,
+            playerDelegate = playerDelegate,
+            queueDelegate = queueDelegate,
+        )
+
     val audioEffectPlayerListener: Player.Listener =
         object : Player.Listener {
             override fun onEvents(
@@ -267,6 +276,10 @@ internal class MusicServicePlayerListeners(
     internal fun triggerPagination(isPlaybackEnded: Boolean) {
         playerTransitionHandler.triggerPagination(isPlaybackEnded)
     }
+
+    internal fun triggerBackwardPagination(): Boolean = queueBackwardPaging.request()
+
+    internal fun hasPendingBackwardBatch(): Boolean = queueBackwardPaging.hasPendingBatch()
 
     override fun onEvents(
         player: Player,

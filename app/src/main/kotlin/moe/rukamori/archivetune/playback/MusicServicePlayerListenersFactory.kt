@@ -41,6 +41,9 @@ internal fun MusicService.createMusicServicePlayerListeners(): MusicServicePlaye
             override val autoAddedMediaIds: MutableSet<String> get() = service.autoAddedMediaIds
             override val dataStore: DataStore<Preferences> get() = service.dataStore
             override fun onInfiniteQueueEnabled() = service.onInfiniteQueueEnabled()
+            override fun setPreviousQueueLoading(isLoading: Boolean) {
+                service.previousQueueLoading.value = isLoading
+            }
             override suspend fun saveQueueToDisk() = service.saveQueueToDisk()
             override fun applyCurrentFirstShuffleOrder() = service.applyCurrentFirstShuffleOrder()
 

@@ -151,7 +151,10 @@ fun PlayerOverlayHost(
             .distinctUntilChanged()
     }.collectAsStateWithLifecycle(initialValue = false)
 
-    val navSlideDistance = floatingToolbarBottomPadding + navVisibleHeight
+    val navSlideDistance = PlayerDockGeometry.navigationBarBottomOffset(
+        floatingToolbarBottomPadding = floatingToolbarBottomPadding,
+        navigationBarHeight = navVisibleHeight,
+    )
     val dropState = rememberMiniPlayerDropState(
         navSlideDistance = navSlideDistance,
         scrollVisibilityFactor = scrollVisibilityFactor,
@@ -180,6 +183,7 @@ fun PlayerOverlayHost(
                 hazeState = hazeState,
                 pureBlack = pureBlack,
                 blurRadius = blurRadius,
+                useRail = useRail,
                 onExpansionFractionChanged = { fraction ->
                     coroutineScope.launch {
                         playerExpansionAnimatable.snapTo(fraction)

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.flow.StateFlow
 import moe.rukamori.archivetune.MiniPlayerDropState
+import moe.rukamori.archivetune.PlayerDockGeometry
 import moe.rukamori.archivetune.constants.EnableHapticFeedbackKey
 import moe.rukamori.archivetune.ui.player.player_0.buttons.PlayerAction
 import moe.rukamori.archivetune.ui.player.player_0.sett.PlayerMenuScreen
@@ -53,6 +54,7 @@ fun UnifiedPlayerSheetV2(
     onSeekStarted: () -> Unit,
     playbackProgress: StateFlow<Long>,
     bottomBarHeight: Dp = 0.dp,
+    useRail: Boolean = false,
     hazeState: HazeState? = null,
     pureBlack: Boolean = false,
     blurRadius: Float = SettingsDimensions.BlurRadiusDefault,
@@ -72,11 +74,20 @@ fun UnifiedPlayerSheetV2(
     var menuInitialScreen by remember { mutableStateOf(PlayerMenuScreen.SETTINGS) }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val collapsedHorizontalInset = remember(maxWidth, useRail) {
+            PlayerDockGeometry.collapsedHorizontalInset(
+                availableWidth = maxWidth,
+                useRail = useRail,
+            )
+        }
+
         val motionScope = rememberPlayerSheetMotionScope(
             state = state,
             maxHeight = maxHeight,
             maxWidth = maxWidth,
             bottomBarHeight = bottomBarHeight,
+            useRail = useRail,
+            collapsedHorizontalInset = collapsedHorizontalInset,
             density = density,
             onExpansionFractionChanged = onExpansionFractionChanged,
             onCloseLyricsClick = onCloseLyricsClick,
@@ -138,6 +149,7 @@ fun UnifiedPlayerSheetV2(
                         state = state,
                         queueState = queueState,
                         updateState = updateState,
+                        miniHorizontalInset = collapsedHorizontalInset,
                         expansionFractionProvider = { motionScope.expansionFraction.value },
                         lyricsFractionProvider = motionScope.lyricsFractionProvider,
                         queueFractionProvider = motionScope.queueFractionProvider,

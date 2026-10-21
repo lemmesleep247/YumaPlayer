@@ -1245,4 +1245,26 @@
     <string name="sponsor_block_fillers">Fillers</string>
     <string name="sponsor_block_subscription_reminders">Promemoria sottosrizione</string>
     <string name="sponsor_block_hooks">Hook/Greetings</string>
+    <string name="stats_axis_6am">6:00</string>
+    <string name="stats_axis_12am">0:00</string>
+    <string name="stats_axis_12pm">12:00</string>
+    <string name="stats_axis_6pm">18:00</string>
+    <string name="partially_cached">Parzialmente</string>
+    <string name="import_complete_title">Importazione Completata</string>
+    <string name="import_total_processed">Processato: %1$d</string>
+    <string name="import_success_count">Importato con Successo: %1$d</string>
+    <string name="import_failed_count">Fallito: %1$d</string>
+    <string name="import_failed_items_title">Oggetti Falliti:</string>
+    <string name="queue_mix_from_playlist">Mix da Playlist</string>
+    <string name="selection_title">Selezione</string>
+    <string name="debug_share_logs">Condividi log</string>
+    <string name="debug_restart">Riavvia</string>
+    <string name="debug_close">Chiudi</string>
+    <string name="together_invalid_server_url">Connessione fallita: URL server websocket non valido</string>
+    <string name="good_morning">Buongiorno</string>
+    <string name="good_afternoon">Buon pomeriggio</string>
+    <string name="good_evening">Buonasera</string>
+    <string name="good_night">Buonanotte</string>
+    <string name="marquee_enabled">Testo scorrevole</string>
+    <string name="marquee_enabled_desc">Abilita testo scorrevole per titoli lunghi</string>
 </resources>

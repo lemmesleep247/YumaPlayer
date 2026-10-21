@@ -32,11 +32,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import moe.rukamori.archivetune.constants.FloatingToolbarBottomPadding
-import moe.rukamori.archivetune.constants.FloatingToolbarHeight
+import moe.rukamori.archivetune.PlayerDockGeometry
 import moe.rukamori.archivetune.constants.FloatingToolbarHorizontalPadding
-import moe.rukamori.archivetune.constants.MiniPlayerBottomSpacing
-import moe.rukamori.archivetune.constants.MiniPlayerHeight
 import moe.rukamori.archivetune.ui.player.player_0.scoped.FullPlayerVisualState
 import moe.rukamori.archivetune.ui.player.player_0.scoped.SheetMotionController
 import moe.rukamori.archivetune.ui.player.player_0.scoped.SheetVisualState
@@ -44,6 +41,7 @@ import moe.rukamori.archivetune.ui.player.player_0.scoped.rememberFullPlayerVisu
 import moe.rukamori.archivetune.ui.player.player_0.scoped.rememberSheetVisualState
 import moe.rukamori.archivetune.ui.state.PlayerSheetState
 import moe.rukamori.archivetune.ui.state.PlayerUiState
+import moe.rukamori.archivetune.ui.theme.YdsInsets
 
 @Stable
 internal class PlayerSheetMotionScope(
@@ -128,6 +126,8 @@ internal fun rememberPlayerSheetMotionScope(
     maxHeight: Dp,
     maxWidth: Dp,
     bottomBarHeight: Dp,
+    useRail: Boolean = false,
+    collapsedHorizontalInset: Dp = FloatingToolbarHorizontalPadding,
     density: Density,
     onExpansionFractionChanged: (Float) -> Unit,
     onCloseLyricsClick: () -> Unit,
@@ -145,17 +145,17 @@ internal fun rememberPlayerSheetMotionScope(
     val screenWidthDp = maxWidth
     val screenWidthPx = with(density) { screenWidthDp.toPx() }
 
-    val navigationBarsPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val miniHeightPx = with(density) { MiniPlayerHeight.toPx() }
+    val rawNavBarsPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val safeBottomPadding = if (useRail) rawNavBarsPadding else YdsInsets.safeBottomPadding()
+    val miniHeightPx = with(density) { PlayerDockGeometry.miniPlayerHeight.toPx() }
 
     val expandedY = 0f
 
     val totalOffsetPx = with(density) {
-        val progress = if (FloatingToolbarHeight > 0.dp) {
-            (bottomBarHeight / FloatingToolbarHeight).coerceIn(0f, 1f)
-        } else 0f
-        val navContribution = (FloatingToolbarHeight + FloatingToolbarBottomPadding) * progress
-        (navigationBarsPadding + navContribution + MiniPlayerBottomSpacing + MiniPlayerHeight).toPx()
+        PlayerDockGeometry.sheetCollapsedOffset(
+            safeBottomPadding = safeBottomPadding,
+            bottomBarHeight = bottomBarHeight,
+        ).toPx()
     }
 
     val collapsedY = if (state.trackUrl.isEmpty()) {
@@ -299,7 +299,7 @@ internal fun rememberPlayerSheetMotionScope(
 
     val sheetVisualState = rememberSheetVisualState(
         showPlayerContentArea = true,
-        collapsedStateHorizontalPadding = FloatingToolbarHorizontalPadding,
+        collapsedStateHorizontalPadding = collapsedHorizontalInset,
         predictiveBackCollapseProgress = predictiveBackProgress,
         currentSheetContentState = currentSheetState,
         playerContentExpansionFraction = expansionFraction,

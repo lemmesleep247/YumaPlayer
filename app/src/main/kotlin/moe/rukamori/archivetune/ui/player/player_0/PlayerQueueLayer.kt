@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import moe.rukamori.archivetune.LocalPlayerConnection
 import moe.rukamori.archivetune.ui.player.player_0.buttons.PlayerAction
 import moe.rukamori.archivetune.ui.player.player_0.scoped.ActiveDragSheet
 import moe.rukamori.archivetune.ui.player.player_0.scoped.SheetVerticalDragGestureHandler
@@ -44,6 +45,7 @@ internal fun PlayerQueueLayer(
     modifier: Modifier = Modifier,
     dragHandler: SheetVerticalDragGestureHandler? = null,
 ) {
+    val playerConnection = LocalPlayerConnection.current
     var isQueueReordering by remember { mutableStateOf(false) }
     val initialTrackIndex = remember {
         queueState.currentWindowIndex.takeIf { it in queueState.queueWindows.indices } ?: 0
@@ -54,8 +56,11 @@ internal fun PlayerQueueLayer(
         derivedStateOf { queueFractionProvider() > 0.05f }
     }
 
-    LaunchedEffect(isQueueVisible, queueState.currentWindowIndex) {
-        if (isQueueVisible && queueState.currentWindowIndex in queueState.queueWindows.indices) {
+    val currentPlayingUid =
+        queueState.queueWindows.getOrNull(queueState.currentWindowIndex)?.uid
+
+    LaunchedEffect(isQueueVisible, currentPlayingUid) {
+        if (isQueueVisible && currentPlayingUid != null) {
             val targetIndex = (queueState.currentWindowIndex - 1).coerceAtLeast(0)
             queueListState.scrollToItem(targetIndex)
         }
@@ -69,9 +74,12 @@ internal fun PlayerQueueLayer(
                     queueListState.firstVisibleItemScrollOffset == 0
         }
     }
-    val queueNestedScrollConnection = remember(dragHandler) {
+    val queueNestedScrollConnection = remember(dragHandler, playerConnection) {
         dragHandler?.createNestedScrollConnection(
-            canDragProvider = { canDragQueue },
+            canDragProvider = {
+                canDragQueue &&
+                        playerConnection?.service?.hasPreviousQueuePage() != true
+            },
             targetSheet = ActiveDragSheet.QUEUE
         )
     }

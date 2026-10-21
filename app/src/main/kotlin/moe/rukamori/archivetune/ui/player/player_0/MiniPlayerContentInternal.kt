@@ -96,7 +96,7 @@ internal fun MiniPlayerContentInternal(
                 indication = null,
                 onClick = onMediaAreaClick
             )
-            .padding(start = 28.dp, end = 24.dp),
+            .padding(start = 12.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(

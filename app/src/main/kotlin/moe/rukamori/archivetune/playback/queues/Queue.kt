@@ -85,7 +85,18 @@ interface Queue {
 }
 
 interface SpotifyQueue : Queue {
+    data class PreviousPage(
+        val items: List<MediaItem>,
+        val generation: Long,
+    )
+
     override val isContextQueue: Boolean get() = true
+
+    val contextGeneration: Long get() = 0L
+
+    fun hasPreviousPage(): Boolean = false
+
+    suspend fun previousPage(): PreviousPage = PreviousPage(emptyList(), contextGeneration)
 }
 
 fun List<MediaItem>.filterExplicit(enabled: Boolean = true) =

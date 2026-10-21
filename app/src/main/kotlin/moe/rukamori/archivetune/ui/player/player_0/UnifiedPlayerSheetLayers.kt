@@ -8,6 +8,7 @@ package moe.rukamori.archivetune.ui.player.player_0
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -15,7 +16,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import kotlinx.coroutines.flow.StateFlow
+import moe.rukamori.archivetune.constants.FloatingToolbarHorizontalPadding
 import moe.rukamori.archivetune.ui.player.player_0.buttons.PlayerAction
 import moe.rukamori.archivetune.ui.player.player_0.scoped.FullPlayerVisualState
 import moe.rukamori.archivetune.ui.player.player_0.scoped.SheetVerticalDragGestureHandler
@@ -29,6 +32,7 @@ internal fun UnifiedPlayerSheetLayers(
     state: PlayerUiState,
     queueState: QueueUiState,
     updateState: UpdateState,
+    miniHorizontalInset: Dp = FloatingToolbarHorizontalPadding,
     expansionFractionProvider: () -> Float,
     lyricsFractionProvider: () -> Float,
     queueFractionProvider: () -> Float,
@@ -90,6 +94,7 @@ internal fun UnifiedPlayerSheetLayers(
                         val fraction = expansionFractionProvider()
                         alpha = (1f - (fraction / 0.3f)).coerceIn(0f, 1f)
                     }
+                    .padding(horizontal = miniHorizontalInset)
             ) {
                 MiniPlayerContentInternal(
                     state = state,

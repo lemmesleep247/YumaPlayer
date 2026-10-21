@@ -20,6 +20,7 @@ internal fun ScopedPlayerSheet(
     hazeState: HazeState?,
     pureBlack: Boolean,
     blurRadius: Float,
+    useRail: Boolean = false,
     dropState: MiniPlayerDropState = MiniPlayerDropState.Default,
     onExpansionFractionChanged: (Float) -> Unit,
 ) {
@@ -60,6 +61,7 @@ internal fun ScopedPlayerSheet(
         onImmersiveChanged = { playerViewModel.setImmersiveEnabled(it) },
 
         bottomBarHeight = bottomNavigationBarHeight,
+        useRail = useRail,
         hazeState = hazeState,
         pureBlack = pureBlack,
         blurRadius = blurRadius,
