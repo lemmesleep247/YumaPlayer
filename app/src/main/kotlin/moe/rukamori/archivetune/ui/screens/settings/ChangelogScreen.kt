@@ -8,43 +8,57 @@
 
 package moe.rukamori.archivetune.ui.screens.settings
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.request.crossfade
-import moe.rukamori.archivetune.ui.theme.LocalYumaColors
-import moe.rukamori.archivetune.ui.theme.yumaGlassCard
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
+import moe.rukamori.archivetune.BuildConfig
 import moe.rukamori.archivetune.LocalPlayerAwareWindowInsets
 import moe.rukamori.archivetune.R
 import moe.rukamori.archivetune.constants.UpdateChannel
 import moe.rukamori.archivetune.ui.component.IconButton
-import moe.rukamori.archivetune.ui.component.MarkdownText
-import moe.rukamori.archivetune.ui.theme.ThemePreviews
-import moe.rukamori.archivetune.ui.theme.TestThemeWrapper
-import moe.rukamori.archivetune.ui.utils.backToMain
-import moe.rukamori.archivetune.utils.ReleaseInfo
-import moe.rukamori.archivetune.utils.Updater
-import java.text.SimpleDateFormat
-import java.util.Locale
 import moe.rukamori.archivetune.ui.settings.SettingsDimensions
-import androidx.navigation.compose.rememberNavController
+import moe.rukamori.archivetune.ui.theme.TestThemeWrapper
+import moe.rukamori.archivetune.ui.theme.ThemePreviews
+import moe.rukamori.archivetune.ui.utils.backToMain
+import moe.rukamori.archivetune.utils.Updater
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,7 +67,12 @@ fun ChangelogScreen(
     channel: UpdateChannel = UpdateChannel.STABLE,
 ) {
     val coroutineScope = rememberCoroutineScope()
-    var releases by remember { mutableStateOf<List<ReleaseInfo>>(emptyList()) }
+    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val listState = rememberLazyListState()
+
+    var releases by remember { mutableStateOf<List<ChangelogRelease>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -65,15 +84,18 @@ fun ChangelogScreen(
                 Updater.getAllReleases(forceRefresh = forceRefresh)
             }
         result
-            .onSuccess { r ->
-                releases = when (channel) {
-                    UpdateChannel.DAILY_NIGHTLY -> r
-                    else -> r.filter { !it.prerelease }
-                }
+            .onSuccess { rawReleases ->
+                val filteredReleases =
+                    if (channel == UpdateChannel.DAILY_NIGHTLY) {
+                        rawReleases
+                    } else {
+                        rawReleases.filter { !it.prerelease }
+                    }
+                releases = toChangelogReleases(filteredReleases)
                 error = null
-            }.onFailure { e ->
+            }.onFailure { throwable ->
                 if (releases.isEmpty()) {
-                    error = e.message
+                    error = throwable.message
                 }
             }
         isLoading = false
@@ -87,16 +109,38 @@ fun ChangelogScreen(
                 Updater.getCachedReleases().filter { !it.prerelease }
             }
         if (cachedReleases.isNotEmpty()) {
-            releases = cachedReleases
+            releases = toChangelogReleases(cachedReleases)
             isLoading = false
         }
         loadReleases(forceRefresh = true)
     }
 
+    val timelineState =
+        remember(releases, channel) {
+            buildReleaseTimelineState(
+                releases = releases,
+                channel = channel,
+                installedVersion = BuildConfig.VERSION_NAME,
+            )
+        }
+
+    val actions =
+        ReleaseTimelineActions(
+            onOpenRelease = { url ->
+                runCatching { uriHandler.openUri(url) }
+                    .onFailure {
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(context.getString(R.string.release_open_failed))
+                        }
+                    }
+            },
+        )
+
     SettingsScreenBackground {
         Scaffold(
             containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             topBar = {
                 TopAppBar(
                     title = { Text(stringResource(R.string.changelog)) },
@@ -111,169 +155,83 @@ fun ChangelogScreen(
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        scrolledContainerColor = Color.Transparent,
-                    ),
+                    colors =
+                        TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                            scrolledContainerColor = Color.Transparent,
+                        ),
                 )
             },
-    ) { paddingValues ->
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(top = paddingValues.calculateTopPadding())
-                    .windowInsetsPadding(
-                        LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Horizontal),
-                    ),
-        ) {
-            when {
-                isLoading -> {
-                    CircularWavyProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-                }
-
-                error != null && releases.isEmpty() -> {
-                    Column(
-                        modifier =
-                            Modifier
-                                .align(Alignment.Center)
-                                .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.error_loading_changelog),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        TextButton(onClick = {
-                            isLoading = releases.isEmpty()
-                            error = null
-                            coroutineScope.launch {
-                                loadReleases(forceRefresh = true)
-                            }
-                        }, shapes = ButtonDefaults.shapes()) {
-                            Text(stringResource(R.string.retry))
-                        }
-                    }
-                }
-
-                releases.isEmpty() -> {
-                    Text(
-                        text = stringResource(R.string.no_releases),
-                        modifier =
-                            Modifier
-                                .align(Alignment.Center)
-                                .padding(16.dp),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                }
-
-                else -> {
-                    LazyColumn(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = SettingsDimensions.ScreenHorizontalPadding),
-                        verticalArrangement = Arrangement.spacedBy(SettingsDimensions.SegmentedItemGap),
-                    ) {
-                        item { Spacer(modifier = Modifier.height(8.dp)) }
-
-                        items(
-                            items = releases,
-                            key = { it.tagName.ifBlank { it.name } + it.publishedAt },
-                            contentType = { "changelog_release" }
-                        ) { release ->
-                            ReleaseCard(release = release)
-                        }
-
-                        item { Spacer(modifier = Modifier.height(SettingsDimensions.ScreenBottomPadding + playerAwareBottomInset())) }
-                    }
-                }
-            }
-        }
-    }
-}
-}
-
-@Composable
-private fun ReleaseCard(release: ReleaseInfo) {
-    val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
-    val displayDateFormat = remember { SimpleDateFormat("MMMM d, yyyy", Locale.getDefault()) }
-
-    val formattedDate =
-        remember(release.publishedAt) {
-            try {
-                val date = dateFormat.parse(release.publishedAt.substring(0, 10))
-                date?.let { displayDateFormat.format(it) } ?: release.publishedAt
-            } catch (e: Exception) {
-                release.publishedAt
-            }
-        }
-
-    val colors = LocalYumaColors.current
-    val cardShape = RoundedCornerShape(28.dp)
-    val imageShape = RoundedCornerShape(24.dp)
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .yumaGlassCard(
-                shape = cardShape,
-                backgroundColor = colors.glassBackground,
-                borderColor = colors.glassBorder,
-                strokeWidth = SettingsDimensions.GlassBorderThickness,
-            )
-            .padding(16.dp),
-    ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            if (!release.imageUrl.isNullOrBlank()) {
-                val context = LocalContext.current
-                val imageModel = remember(context, release.imageUrl) {
-                    ImageRequest.Builder(context)
-                        .data(release.imageUrl)
-                        .crossfade(true)
-                        .build()
-                }
-                AsyncImage(
-                    model = imageModel,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 180.dp)
-                        .clip(imageShape),
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+        ) { paddingValues ->
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(top = paddingValues.calculateTopPadding())
+                        .windowInsetsPadding(
+                            LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Horizontal),
+                        ),
             ) {
-                Text(
-                    text = release.name.ifBlank { release.tagName },
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    text = formattedDate,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+                when {
+                    isLoading -> {
+                        CircularWavyProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    }
 
-            if (!release.body.isNullOrBlank()) {
-                MarkdownText(
-                    markdown = release.body,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
+                    error != null && releases.isEmpty() -> {
+                        Column(
+                            modifier =
+                                Modifier
+                                    .align(Alignment.Center)
+                                    .padding(SettingsDimensions.ScreenHorizontalPadding),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(SettingsDimensions.SectionSpacing),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.error_loading_changelog),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                            TextButton(
+                                onClick = {
+                                    isLoading = releases.isEmpty()
+                                    error = null
+                                    coroutineScope.launch {
+                                        loadReleases(forceRefresh = true)
+                                    }
+                                },
+                                shapes = ButtonDefaults.shapes(),
+                            ) {
+                                Text(stringResource(R.string.retry))
+                            }
+                        }
+                    }
+
+                    releases.isEmpty() -> {
+                        Text(
+                            text = stringResource(R.string.no_releases),
+                            modifier =
+                                Modifier
+                                    .align(Alignment.Center)
+                                    .padding(16.dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+
+                    else -> {
+                        ReleaseTimeline(
+                            state = timelineState,
+                            actions = actions,
+                            listState = listState,
+                            bottomPadding = SettingsDimensions.ScreenBottomPadding + playerAwareBottomInset(),
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = SettingsDimensions.ScreenHorizontalPadding),
+                        )
+                    }
+                }
             }
         }
     }
