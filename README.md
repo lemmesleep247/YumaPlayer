@@ -58,8 +58,13 @@ No subscriptions. No advertisements. Zero telemetry, crash reporters, or third-p
 
 ---
 
-## 📸 Showcase
+<div align="center">
+  <img src="assets/yuma_readme.png" alt="Yuma" width="380" />
+</div>
 
+---
+
+## 📸 Showcase
 <div align="center">
   <table>
     <tr>

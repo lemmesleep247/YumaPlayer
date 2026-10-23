@@ -382,7 +382,7 @@
     <string name="external_downloader_package">Paket Aplikasi Pengunduh</string>
     <string name="external_downloader_package_desc">Nama paket aplikasi pengunduh eksternal (mis. com.deniscerri.ytdl)</string>
     <string name="open_with_downloader">Buka dengan Pengunduh</string>
-    <string name="external_downloader_not_installed">Aplikasi pengunduh eksternal tidak diinstal</string>
+    <string name="external_downloader_not_installed">Aplikasi pengunduh eksternal tidak terinstal</string>
     <string name="external_downloader_not_configured">Tidak ada pengunduh eksternal yang dikonfigurasi. Tetapkan satu di Pengaturan → Pemutar.</string>
     <string name="add_symbol">Tambahkan simbol</string>
     <string name="enter_symbol">Masukkan simbol</string>
@@ -1151,8 +1151,8 @@
     <string name="discord_reauthorize_action">Otorisasi ulang</string>
     <string name="duration_seconds_short">%1$dd</string>
     <string name="export">Ekspor</string>
-    <string name="onboarding_permission_app_installation_title">Pemasangan aplikasi</string>
-    <string name="onboarding_permission_app_installation_desc">Pasang pembaruan APK yang diunduh dari YumaPlayer.</string>
+    <string name="onboarding_permission_app_installation_title">Menginstal aplikasi</string>
+    <string name="onboarding_permission_app_installation_desc">Instal pembaruan APK yang diunduh dari YumaPlayer.</string>
     <string name="onboarding_permission_bluetooth_scan_title">Pemindaian Bluetooth</string>
     <string name="onboarding_community_github_desc">Bintangi repositori dan ikuti rilis.</string>
     <string name="onboarding_community_discord_title">Gabung ke Discord</string>
@@ -1185,8 +1185,8 @@
     <string name="updates_channel_warning_nightly_title">Versi Nightly</string>
     <string name="updates_channel_warning_nightly_risk">Versi Nightly mungkin menyertakan fitur eksperimental, perubahan yang belum selesai, atau regresi sementara.</string>
     <string name="updates_channel_warning_nightly_unstable">Versi Nightly disediakan hanya untuk pengujian dan akses awal.\nStabilitas, kompatibilitas, dan fungsionalitas tidak dijamin.</string>
-    <string name="updates_channel_warning_acknowledgement">Catatan: mengunduh langsung dari Github akan melewati penyaringan tambahan yang dilakukan oleh toko aplikasi tempat Anda pertama kali memasang aplikasi ini.\nDengan melanjutkan, Anda mengakui bahwa versi nightly mungkin tidak stabil dan menanggung sendiri risiko penggunaannya.</string>
-    <string name="updates_daily_channel_confirmation">Beralih ke saluran Harian untuk menerima pembaruan dari repositori daily-nightly.\n\nVersi harian dipublikasikan secara otomatis setiap hari dari cabang pengembangan terbaru.\nCatatan: mengunduh langsung dari Github akan melewati penyaringan tambahan yang dilakukan oleh toko aplikasi tempat Anda pertama kali memasang aplikasi ini.</string>
+    <string name="updates_channel_warning_acknowledgement">Catatan: mengunduh langsung dari Github akan melewati penyaringan tambahan yang dilakukan oleh toko aplikasi tempat Anda pertama kali menginstal aplikasi ini.\nDengan melanjutkan, Anda mengakui bahwa versi nightly mungkin tidak stabil dan menanggung sendiri risiko penggunaannya.</string>
+    <string name="updates_daily_channel_confirmation">Beralih ke saluran Harian untuk menerima pembaruan dari repositori daily-nightly.\n\nVersi harian dipublikasikan secara otomatis setiap hari dari branch pengembangan terbaru.\nCatatan: mengunduh langsung dari Github akan melewati penyaringan tambahan yang dilakukan oleh toko aplikasi tempat Anda pertama kali menginstal aplikasi ini.</string>
     <string name="lastfm_provider_custom">Kustom</string>
     <string name="lastfm_custom_endpoint">Endpoint kustom</string>
     <string name="lastfm_api_credentials">Kredensial API</string>
@@ -1239,4 +1239,24 @@
     <string name="good_night">Selamat malam</string>
     <string name="marquee_enabled">Teks bergulir</string>
     <string name="marquee_enabled_desc">Aktifkan pengguliran otomatis untuk judul panjang</string>
+    <string name="release_badge_latest">Terbaru</string>
+    <string name="release_badge_installed">Terinstal</string>
+    <string name="release_badge_prerelease">Prarilis</string>
+    <string name="release_notes_summary_features">Fitur: %1$d</string>
+    <string name="release_notes_summary_fixes">Perbaikan: %1$d</string>
+    <string name="release_notes_summary_performance">Performa: %1$d</string>
+    <string name="release_notes_section_features">Fitur</string>
+    <string name="release_notes_section_fixes">Perbaikan</string>
+    <string name="release_notes_section_performance">Performa</string>
+    <string name="release_notes_section_improvements">Peningkatan</string>
+    <string name="release_notes_section_refactors">Refaktor</string>
+    <string name="release_notes_section_documentation">Dokumentasi</string>
+    <string name="release_notes_section_other">Perubahan lainnya</string>
+    <string name="release_notes_show_all">Tampilkan semua (%1$d)</string>
+    <string name="release_notes_show_less">Ciutkan</string>
+    <string name="release_notes_open_on_github">Lihat di GitHub</string>
+    <string name="release_open_failed">Gagal membuka halaman rilis</string>
+    <string name="release_state_expanded">Diperluas</string>
+    <string name="release_state_collapsed">Diciutkan</string>
+    <string name="release_notes_section_build_ci">Versi / CI</string>
 </resources>

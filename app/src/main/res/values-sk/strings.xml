@@ -384,4 +384,17 @@
     <string name="settings">Nastavenia</string>
     <string name="appearance">Vzhľad</string>
     <string name="app_icon_description">Vyberte ikonu spúšťača</string>
+    <string name="palette_graphite">Grafit</string>
+    <string name="palette_terracotta">Terracotta</string>
+    <string name="palette_mocha">Mocha</string>
+    <string name="dark_theme">Tmavá téma</string>
+    <string name="show_button">Zobraziť tlačidlo</string>
+    <string name="corner_radius">Rohový polomer: %1$d</string>
+    <string name="adjust_radius">Nastavenie rohového okruhu</string>
+    <string name="blur_nav_bar">Rozhranie blur</string>
+    <string name="blur_nav_bar_desc">Použiť real-time blur za plávajúce navigačnej lišty, vyhľadávanie a panely</string>
+    <string name="blur_radius">Blurová intenzita</string>
+    <string name="blur_radius_desc">Upravte intenzitu pozadia na plávajúce panely</string>
+    <string name="disable_animations">Vypnúť animácie</string>
+    <string name="disable_animations_desc">Vypnúť väčšinu animácie aplikácie. Odporúčané pre nízko-end zariadenia</string>
 </resources>

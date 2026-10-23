@@ -1217,4 +1217,26 @@
     <string name="sponsor_block_fillers">フィラー</string>
     <string name="sponsor_block_subscription_reminders">サブスクリプションリマインダー</string>
     <string name="sponsor_block_hooks">フック/グリーティング</string>
+    <string name="stats_axis_12am">午前12時</string>
+    <string name="stats_axis_6am">午前6時</string>
+    <string name="stats_axis_12pm">午後12時</string>
+    <string name="stats_axis_6pm">午後6時</string>
+    <string name="partially_cached">一部</string>
+    <string name="import_complete_title">インポート完了</string>
+    <string name="import_total_processed">総処理数: %1$d</string>
+    <string name="import_success_count">インポートに成功: %1$d</string>
+    <string name="import_failed_count">失敗: %1$d</string>
+    <string name="import_failed_items_title">失敗した項目:</string>
+    <string name="queue_mix_from_playlist">プレイリストからミックス</string>
+    <string name="selection_title">セレクション</string>
+    <string name="marquee_enabled">テキストのスクロール</string>
+    <string name="marquee_enabled_desc">長いタイトルの自動スクロールを有効にする</string>
+    <string name="debug_share_logs">ログを共有する</string>
+    <string name="debug_restart">再起動</string>
+    <string name="debug_close">閉じる</string>
+    <string name="together_invalid_server_url">接続が失敗しました: 無効なサーバー websocket URL</string>
+    <string name="good_morning">おはようございます</string>
+    <string name="good_afternoon">こんにちは</string>
+    <string name="good_evening">こんばんは</string>
+    <string name="good_night">おやすみ</string>
 </resources>
